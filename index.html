@@ -2,222 +2,1184 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>ICF CKA 실전 모의고사</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICF CKA 94 케이스별 종합 학습 & 실전 모의고사 시스템</title>
     <style>
-        body { font-family: 'Malgun Gothic', sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .login-box, .exam-box { background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 100%; max-width: 800px; }
-        .hidden { display: none !important; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0 16px 0; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 6px; box-sizing: border-box; }
-        button { width: 100%; padding: 14px; background: #dc2626; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px; }
-        button:hover { background: #b91c1c; }
-        .flag-box { background: #334155; padding: 15px; border-radius: 8px; margin-top: 20px; }
-        .question-img { max-width: 100%; height: auto; border-radius: 6px; background: #000; min-height: 180px; display: block; margin: 0 auto; }
-        #webcam-container { position: fixed; bottom: 20px; right: 20px; width: 160px; height: 120px; border: 2px solid #dc2626; border-radius: 8px; overflow: hidden; background: #000; z-index: 999; }
-        #webcam { width: 100%; height: 100%; object-fit: cover; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; }
+        body { 
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: #1f2937;
+            padding: 10px;
+        }
+
+        /* 시작 비밀번호 잠금 오버레이 */
+        #authOverlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #09090b 100%);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .auth-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 32px 28px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            text-align: center;
+        }
+        .auth-icon { font-size: 2.5em; margin-bottom: 8px; }
+        .auth-title { font-size: 1.3em; font-weight: 800; color: #1e1b4b; margin-bottom: 6px; }
+        .auth-sub { font-size: 0.85em; color: #64748b; margin-bottom: 20px; line-height: 1.4; }
+        .auth-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1.05em;
+            text-align: center;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .auth-input:focus { border-color: #6366f1; }
+        .auth-error { color: #ef4444; font-size: 0.82em; font-weight: 600; min-height: 18px; margin-bottom: 12px; }
+        .auth-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.98em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .auth-btn:hover { opacity: 0.95; }
+
+        .flashcard-wrapper { 
+            max-width: 1100px; 
+            width: 100%; 
+            height: calc(100vh - 20px); 
+            background: #ffffff; 
+            border-radius: 20px; 
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5); 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden;
+            position: relative;
+        }
+        .header { 
+            background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%); 
+            color: white; 
+            padding: 12px 24px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            flex-shrink: 0; 
+        }
+        .header-title { font-size: 1.2em; font-weight: 800; letter-spacing: -0.3px; }
+        .header-sub { font-size: 0.8em; opacity: 0.85; margin-top: 2px; }
+        
+        .progress-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0,0,0,0.25);
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 700;
+        }
+        .jump-select {
+            background: rgba(255,255,255,0.95);
+            border: none;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 0.85em;
+            font-weight: bold;
+            color: #312e81;
+            cursor: pointer;
+        }
+
+        .content-area { 
+            flex: 1; 
+            padding: 18px 24px; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 14px; 
+            background: #f8fafc; 
+        }
+        .content-area::-webkit-scrollbar { width: 7px; } 
+        .content-area::-webkit-scrollbar-track { background: #f1f5f9; } 
+        .content-area::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; } 
+
+        .case-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        .case-pill {
+            background: linear-gradient(135deg, #4338ca, #6366f1);
+            color: white;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 0.95em;
+            letter-spacing: 0.5px;
+        }
+        .mode-badge {
+            font-size: 0.85em;
+            color: #4338ca;
+            font-weight: 700;
+            background: #e0e7ff;
+            padding: 4px 12px;
+            border-radius: 6px;
+        }
+
+        .situation-box { 
+            background: #ffffff; 
+            padding: 14px 18px; 
+            border-radius: 12px; 
+            border: 1px solid #e2e8f0;
+            border-left: 5px solid #4338ca; 
+            font-size: 0.93em; 
+            line-height: 1.65; 
+            color: #1e293b; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .options-section-title {
+            font-size: 0.92em;
+            font-weight: 800;
+            color: #334155;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .option-item {
+            background: #ffffff;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 0.88em;
+            line-height: 1.55;
+            position: relative;
+        }
+        .option-item.best-opt {
+            background: #f0fdf4;
+            border-color: #86efac;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.1);
+        }
+        .option-item.worst-opt {
+            background: #fef2f2;
+            border-color: #fca5a5;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.1);
+        }
+        .opt-label-badge {
+            display: inline-block;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.82em;
+            margin-right: 6px;
+            color: white;
+            background: #64748b;
+        }
+        .best-opt .opt-label-badge { background: #059669; }
+        .worst-opt .opt-label-badge { background: #dc2626; }
+
+        .eval-tag {
+            display: inline-block;
+            font-weight: 800;
+            font-size: 0.8em;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+        .eval-best { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+        .eval-worst { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+        .eval-desc {
+            margin-top: 6px;
+            font-size: 0.84em;
+            padding: 6px 10px;
+            border-radius: 6px;
+            line-height: 1.45;
+        }
+        .best-opt .eval-desc { background: rgba(16, 185, 129, 0.08); color: #065f46; border-left: 3px solid #10b981; }
+        .worst-opt .eval-desc { background: rgba(239, 68, 68, 0.08); color: #991b1b; border-left: 3px solid #ef4444; }
+
+        /* 모의고사 모드 전용 선택 버튼 */
+        .exam-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .action-pick-btn {
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.78em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .action-pick-btn:hover { background: #e2e8f0; }
+        .action-pick-btn.selected-best { background: #10b981; color: white; border-color: #059669; }
+        .action-pick-btn.selected-worst { background: #ef4444; color: white; border-color: #dc2626; }
+
+        /* 찍은 문제 체크 UI */
+        .flag-box {
+            background: #fffbeb;
+            border: 1.5px dashed #f59e0b;
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-top: 10px;
+        }
+        .flag-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            color: #b45309;
+            font-size: 0.88em;
+            cursor: pointer;
+        }
+        .flag-header input { accent-color: #d97706; transform: scale(1.15); cursor: pointer; }
+        .flag-options {
+            display: none;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #fcd34d;
+            gap: 16px;
+            font-size: 0.82em;
+            font-weight: 600;
+            color: #92400e;
+        }
+        .flag-options.show { display: flex; flex-wrap: wrap; }
+        .flag-options label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+
+        .bottom-bar { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 12px 24px; 
+            background: #ffffff; 
+            border-top: 1px solid #e2e8f0; 
+            flex-shrink: 0; 
+            gap: 16px;
+        }
+        .nav-btn { 
+            flex: 1; 
+            padding: 11px 18px; 
+            border: none; 
+            border-radius: 10px; 
+            font-size: 0.92em; 
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: all 0.15s ease; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .nav-btn.prev { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; } 
+        .nav-btn.prev:hover:not(:disabled) { background: #e2e8f0; }
+        .nav-btn.next { background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%); color: white; }
+        .nav-btn.finish { background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white; }
+        .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .shortcut-hint { font-size: 0.78em; color: #94a3b8; text-align: center; }
+
+        /* 다이얼로그 모달 공통 */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.82);
+            backdrop-filter: blur(5px);
+            z-index: 85000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            overflow-y: auto;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 26px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .modal-card.wide { max-width: 860px; text-align: left; }
+        .modal-title { font-size: 1.35em; font-weight: 800; color: #1e1b4b; margin-bottom: 8px; }
+        .modal-sub { font-size: 0.88em; color: #4b5563; margin-bottom: 20px; line-height: 1.5; }
+        .modal-btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+        .m-btn {
+            padding: 11px 20px;
+            border-radius: 10px;
+            font-size: 0.9em;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s;
+        }
+        .m-btn.primary { background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%); color: white; }
+        .m-btn.success { background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white; }
+        .m-btn.secondary { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+
+        /* 성적표 및 채점 뷰 */
+        .score-box {
+            text-align: center;
+            padding: 20px;
+            border-radius: 14px;
+            margin-bottom: 16px;
+        }
+        .score-box.pass { background: #ecfdf5; border: 2.5px solid #10b981; }
+        .score-box.fail { background: #fef2f2; border: 2.5px solid #ef4444; }
+        .score-val { font-size: 2.5em; font-weight: 900; }
+        .score-val.pass { color: #059669; }
+        .score-val.fail { color: #dc2626; }
+        .score-status { font-size: 1.15em; font-weight: 800; margin-top: 4px; }
+        
+        .result-table-wrap {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .result-table { width: 100%; border-collapse: collapse; font-size: 0.8em; text-align: center; }
+        .result-table th { background: #4338ca; color: white; padding: 7px 4px; position: sticky; top: 0; }
+        .result-table td { border-bottom: 1px solid #e2e8f0; padding: 6px 4px; }
+        .row-wrong { background: #fff1f2; }
+        .row-forced-wrong { background: #fffbeb; }
+
+        .wrong-review-card {
+            background: #ffffff;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
     </style>
 </head>
 <body>
 
-    <!-- 로그인 화면 -->
-    <div id="loginWrapper" class="login-box">
-        <h2>ICF CKA 1회용 실전 모의고사</h2>
-        <p>발급받은 1회용 수험번호와 인적사항을 입력하세요.</p>
-        <label>1회용 수험번호 *</label>
-        <input type="text" id="tokenInput" placeholder="예: CKA-1001-XXXX">
-        <label>성명 *</label>
-        <input type="text" id="nameInput" placeholder="홍길동">
-        <label>소속 / 회사명 *</label>
-        <input type="text" id="orgInput" placeholder="한국코칭연구소 등">
-        <label>연락처 *</label>
-        <input type="text" id="phoneInput" placeholder="010-1234-5678">
-        <label>이메일 *</label>
-        <input type="email" id="emailInput" placeholder="example@email.com">
-        <button onclick="startExam()">수험번호 확인 및 시험 시작</button>
-    </div>
-
-    <!-- 시험 화면 -->
-    <div id="examWrapper" class="exam-box hidden">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <span id="examTitle" style="font-weight:bold; color:#facc15;">ICF CKA 실전 모의고사 (랜덤 출제)</span>
-            <span id="warningBadge" style="background:#b91c1c; padding:5px 10px; border-radius:4px; font-size:12px;">경고 0회</span>
-            <span id="timer" style="font-weight:bold; background:#7f1d1d; padding:5px 10px; border-radius:4px;">01:20:00</span>
-        </div>
-        
-        <div id="qNumBadge" style="background:#3b82f6; display:inline-block; padding:4px 10px; border-radius:4px; font-size:14px; margin-bottom:10px;">Q1 / 94</div>
-        
-        <!-- 그림 영역 -->
-        <div style="text-align:center; margin-bottom:15px;">
-            <img id="qImg" class="question-img" src="" alt="그림 파일" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'200\'><text x=\'50%\' y=\'50%\' fill=\'%23aaa\' text-anchor=\'middle\' dominant-baseline=\'middle\'>그림 파일 없음 (폴더명 확인)</text></svg>'">
-        </div>
-
-        <div style="background:#334155; padding:15px; border-radius:8px; margin-bottom:15px;">
-            <h4 style="margin-top:0; color:#60a5fa;">코칭 상황 원문</h4>
-            <p id="qText" style="line-height:1.6; font-size:14px;"></p>
-        </div>
-
-        <div style="font-weight:bold; margin-bottom:8px; color:#f8fafc;">선택지 (Best 1개 & Worst 1개 필수 선택)</div>
-        <div id="optionsContainer"></div>
-
-        <div class="flag-box">
-            <label><input type="checkbox" id="flagCheck" onchange="toggleFlag()"> 이 문제는 찍은 문제입니다 (⚠️ 정답 여부와 상관없이 무조건 0점 처리)</label>
-        </div>
-
-        <div style="display:flex; justify-content:space-between; margin-top:20px;">
-            <button onclick="moveQuestion(-1)" style="width:30%; background:#475569;">이전</button>
-            <span id="progressText" style="align-self:center;">1 / 94</span>
-            <button onclick="moveQuestion(1)" style="width:30%; background:#2563eb;">다음</button>
+    <!-- 비밀번호 오버레이 -->
+    <div id="authOverlay">
+        <div class="auth-card">
+            <div class="auth-icon">🔒</div>
+            <h2 class="auth-title">학습자 인증</h2>
+            <p class="auth-sub">ICF CKA Case 94 학습 시스템을 시작하려면 비밀번호를 입력하세요.</p>
+            <input type="password" id="authPasswordInput" class="auth-input" placeholder="비밀번호 입력..." onkeydown="if(event.key==='Enter') checkAuth()" autofocus />
+            <div id="authError" class="auth-error"></div>
+            <button type="button" class="auth-btn" onclick="checkAuth()">학습 시작하기 🚀</button>
         </div>
     </div>
 
-    <div id="webcam-container">
-        <video id="webcam" autoplay playsinline muted></video>
+    <div class="flashcard-wrapper">
+        <div class="header">
+            <div>
+                <div class="header-title" id="headerTitle">ICF CKA Case Formulation 94 학습 모드 📖</div>
+                <div class="header-sub" id="headerSub">사례별 50% 상황요약 &amp; 정밀 역량 매핑</div>
+            </div>
+            <div class="progress-indicator">
+                <span id="caseCountBadge">CASE 1 / 94</span>
+                <select id="caseSelector" class="jump-select" onchange="jumpToCase(this.value)"></select>
+            </div>
+        </div>
+
+        <div class="content-area" id="cardContent">
+            <div class="case-banner">
+                <span class="case-pill" id="casePill">CASE 01</span>
+                <span class="mode-badge" id="modeBadge">1단계: 전체 사례 학습 중</span>
+            </div>
+
+            <!-- 이미지는 완전히 제거되었습니다. -->
+
+            <div class="situation-box">
+                <strong style="color: #4338ca; display: flex; align-items: center; gap: 5px; margin-bottom: 6px; font-size: 1em;">
+                    📌 코칭 상황 (Situation Context ~50% 요약)
+                </strong>
+                <div id="situationText">로딩 중...</div>
+            </div>
+
+            <div class="options-section-title" id="optionsHeaderTitle">
+                📋 전체 보기 및 정밀 분석 (Options &amp; Formulation)
+            </div>
+            <div class="options-list" id="optionsContainer"></div>
+
+            <!-- 모의고사 전용 찍은 문제 표기 영역 -->
+            <div class="flag-box" id="examFlagBox" style="display: none;">
+                <label class="flag-header">
+                    <input type="checkbox" id="flagCheck" onchange="toggleFlag(this.checked)" />
+                    <span>🤔 확신이 없는 문제 (찍은 문제로 표기 - ⚠️ 정답이어도 오답 처리됨)</span>
+                </label>
+                <div class="flag-options" id="flagOptionsWrap">
+                    <label><input type="checkbox" id="flagBestCheck" onchange="updateFlagOption('flagBest', this.checked)" /> Best Action을 찍었음</label>
+                    <label><input type="checkbox" id="flagWorstCheck" onchange="updateFlagOption('flagWorst', this.checked)" /> Worst Action을 찍었음</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <button class="nav-btn prev" id="prevBtn" onclick="changeCase(-1)">⬅️ 이전 (←)</button>
+            <div class="shortcut-hint">방향키 [←] [→] 로 이동 가능</div>
+            <button class="nav-btn next" id="nextBtn" onclick="handleNextClick()">다음 (→) ➡️</button>
+        </div>
+    </div>
+
+    <!-- 모달 1: 학습 완료 안내 (복습하기 유도) -->
+    <div class="modal-overlay" id="learnCompleteModal">
+        <div class="modal-card">
+            <span style="font-size: 2.5em;">🎉</span>
+            <h3 class="modal-title">94개 전체 사례 학습 완료!</h3>
+            <p class="modal-sub">
+                축하합니다! 총 94개 코칭 사례의 정밀 분석과 베스트/워스트 행동 학습을 모두 마치셨습니다.<br>
+                기억을 확고히 다지기 위해 <b>[복습하기]</b>를 진행하시겠습니까?
+            </p>
+            <div class="modal-btn-row">
+                <button type="button" class="m-btn primary" onclick="startReviewMode()">🔄 94문항 전체 복습하기</button>
+                <button type="button" class="m-btn secondary" onclick="closeModal('learnCompleteModal')">창 닫고 현재 위치 보기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 모달 2: 복습 완료 후 선택 (다시 복습 vs 모의고사) -->
+    <div class="modal-overlay" id="reviewDoneChoiceModal">
+        <div class="modal-card">
+            <span style="font-size: 2.5em;">🏆</span>
+            <h3 class="modal-title">복습을 모두 완료하셨습니다!</h3>
+            <p class="modal-sub">
+                이제 실전 역량을 테스트할 준비가 되었습니다.<br>
+                <b>다시 한 번 복습</b>하시겠습니까, 아니면 <b>랜덤 실전 모의고사</b>를 치르시겠습니까?
+            </p>
+            <div class="modal-btn-row">
+                <button type="button" class="m-btn secondary" onclick="restartReview()">🔄 다시 복습하기</button>
+                <button type="button" class="m-btn success" onclick="startExamMode()">🎯 랜덤 실전 모의고사 보기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 모달 3: 시험 결과 및 채점 성적표 -->
+    <div class="modal-overlay" id="examResultModal">
+        <div class="modal-card wide">
+            <h2 class="modal-title">ICF CKA 실전 모의고사 성적표</h2>
+            <div id="scoreBoxWrap" class="score-box">
+                <div class="score-val" id="finalScoreText">0 / 600점</div>
+                <div class="score-status" id="passStatusText">판정 대기</div>
+                <p style="font-size: 0.85em; color: #64748b; margin-top: 6px;">
+                    (기준: 600점 만점 중 460점 이상 합격 | 1상황당 2문항 환산 = 총 188문항 | 찍은 문제는 무조건 오답 처리)
+                </p>
+            </div>
+
+            <h4 style="font-size: 0.95em; margin: 12px 0 6px; color: #1e1b4b;">📊 문항별 채점 상세 내역</h4>
+            <div class="result-table-wrap">
+                <table class="result-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>원래사례</th>
+                            <th>내 선택(Best/Worst)</th>
+                            <th>정답(Best/Worst)</th>
+                            <th>찍음 여부</th>
+                            <th>판정 결과</th>
+                            <th>배점</th>
+                        </tr>
+                    </thead>
+                    <tbody id="examResultTbody"></tbody>
+                </table>
+            </div>
+
+            <div class="modal-btn-row">
+                <button type="button" class="m-btn primary" onclick="openWrongNotesView()">📝 오답 &amp; 찍은 문제 복습하기</button>
+                <button type="button" class="m-btn secondary" onclick="restartReview()">🔄 전체 학습 모드로 복귀</button>
+                <button type="button" class="m-btn success" onclick="startExamMode()">🎲 모의고사 다시 치르기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 모달 4: 오답노트 전용 뷰어 -->
+    <div class="modal-overlay" id="wrongNoteModal">
+        <div class="modal-card wide">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h3 class="modal-title" style="color:#b91c1c; margin:0;">📝 오답 및 찍은 문제 정밀 오답노트</h3>
+                <button type="button" class="m-btn secondary" onclick="closeModal('wrongNoteModal')" style="padding:5px 12px; font-size:0.82em;">✕ 닫기</button>
+            </div>
+            <div id="wrongNoteContainer" style="max-height: 500px; overflow-y: auto; padding-right: 4px;"></div>
+        </div>
     </div>
 
     <script>
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby5B_cKPu01X47N-b6cPeg14VARET7Mvge_4leClr6no2ocwbdG7l-X6bwd8QXxY6vuIw/exec";
+        const ACCESS_PASSWORD = 'ok7588';
 
-        let currentToken = "";
-        let currentName = "";
-        let currentOrg = "";
-        let currentPhone = "";
-        let currentEmail = "";
-        let currentIndex = 0;
-        let warningCount = 0;
-        let userAnswers = {};
-        let flaggedQuestions = {};
-        let timerInterval;
-        let timeLeft = 80 * 60;
+        // 94개 전체 원문 기반 50% 정밀 요약 및 4개 보기 풀
+        const rawExamQuestions = [
+            null,
+            {"s": "임원 비서인 클라이언트가 '어려운 사람'인 임원 밑에서 일하며 극심한 정서적 소진과 좌절감을 토로합니다. 가족의 재정 부담을 걱정하면서도 충동적으로 \"그 사람 밑에서 하루 더 일하느니 차라리 재정적 어려움을 겪는 게 낫겠어요! 당장 내일 퇴사하겠어요\"라며 이분법적 분노를 표출합니다.", "opts": {"A": "클라이언트에게 임원으로부터 어떻게 대우받기를 선호하는지 설명해달라고 요청한다.", "B": "클라이언트에게 미래의 직무에서 원하는 자질이 무엇인지에 대한 질문을 한다.", "C": "클라이언트에게 그날 특별히 좌절감과 퇴사 의도를 고조시킨 일이 있었는지 질문한다.", "D": "클라이언트에게 상황이 참을 수 없을 것 같다고 동의하고, 재정적 어려움을 해결할 방법을 함께 브레인스토밍한다."}},
+            {"s": "첫 세션에서도 집중하지 못했던 고객이 두 번째 세션이 절반이나 지났음에도 세 가지 다른 이슈 사이에서 우선순위를 정하지 못하고 있습니다. 고객은 세 가지 이슈를 모두 논의할 때 심한 스트레스를 드러내며, 문제는 정보 부족이 아닌 선택 자체에 대한 심리적 부담감입니다.", "opts": {"A": "고객에게 무엇이 그들을 불편하게 만드는지 물어본다.", "B": "고객에게 세 가지 이슈에 대해 더 자세히 설명해 달라고 요청한다.", "C": "고객에게 한 번에 한 가지 이슈씩 논의하자고 요청한다.", "D": "고객에게 세 가지 이슈 각각에 대해 1에서 10까지의 스트레스 척도로 점수를 매겨보라고 요청한다."}},
+            {"s": "사업 성장 계획이 세션 목표였으나 스트레스 관리 질문으로 대화가 요가 루틴으로 흘러갔습니다. 코치는 세션 종료 시간이 거의 남지 않았음을 알아차리고, 요가 계획이 원래 세션 목표를 직접 다루지 못했음을 깨닫습니다.", "opts": {"A": "남은 시간이 거의 없다는 것을 인정하고 고객이 남은 시간을 어떻게 사용하고 싶은지 공유하도록 초대한다.", "B": "세션 목표를 다루지 못한 것에 대해 고객에게 사과하고 다음 세션에서 논의하자고 제안한다.", "C": "세션 목표를 달성하기 위해 코치와 고객이 무엇을 더 해야 하는지 묻는다.", "D": "고객에게 다음 세션에서 코치와 함께 보내는 시간을 어떻게 우선순위를 정하고 싶은지 공유하도록 요청한다."}},
+            {"s": "도전적인 연구 문제에 몰두하던 과학자 고객이 자녀들과 아픈 배우자를 돌보는 무게로 압도당한다고 털어놓습니다. 코치가 \"자신을 위한 시간을 얼마나 자주 만드시나요?\"라고 묻자, 고객은 바닥을 응시하며 깊은 침묵과 불편함을 보입니다.", "opts": {"A": "그 질문이 클라이언트의 인식을 높이는 데 도움을 주기 위한 방법으로 제시되었다고 공유한다.", "B": "그 질문이 클라이언트에게 신체적으로 어떤 반응을 일으켰는지 계속해서 주의 깊게 관찰한다.", "C": "만약 자신을 위한 시간을 만든다면 연구 문제를 해결할 수 있을 것이라는 관찰을 공유한다.", "D": "클라이언트에게 응답할 시간을 주되, 약 15초 후에도 아무 말이 없으면 후속 질문을 한다."}},
+            {"s": "창업을 원하는 고객이 4회 세션 내내 창업 의지를 밝히고 행동 계획을 세우면서도 단 한 번도 실행하지 않았습니다. 이번 세션에서도 '너무 바쁘다'며 실행하지 못했고, 이번에 무엇을 다룰지조차 확신하지 못하고 있습니다.", "opts": {"A": "클라이언트에게 지금이 사업을 시작할 적절한 시기인지 묻는다.", "B": "세션 목표를 결정하기 위해 지난 세션의 노트를 검토할 것을 제안한다.", "C": "클라이언트에게 세션이 끝날 때까지 무엇이 달라지기를 원하는지 묻는다.", "D": "클라이언트의 행동과 말 사이의 불일치를 관찰하고 있다고 공유하고, 클라이언트가 그것을 탐색하도록 초대한다."}},
+            {"s": "파트너 피드백에 어려움을 겪는 고객에게 코치가 자신이 공부한 피드백 모델을 동의 하에 설명하기 시작합니다. 그러나 고객의 에너지가 미묘하게 떨어지며 휴대폰을 힐끗 보고 적극적으로 듣지 않는 비언어적 신호를 보입니다.", "opts": {"A": "고객이 코치가 방금 공유한 것에 대해 성찰할 수 있도록 잠시 멈춘다.", "B": "고객이 모델에 대한 코치의 열정을 반영하지 않을 때 코치가 경험하는 실망감을 내려놓는다.", "C": "고객에게 피드백 제공을 더 잘하겠다는 목표를 재확인한다. 그런 다음 고객을 위한 새로운 학습을 만들기 위해 피드백 모델에 대해 계속 공유한다.", "D": "고객의 에너지 변화에 대해 언급하고 피드백 모델을 논의하는 것이 고객의 필요를 충족시키고 있는지 묻는다."}},
+            {"s": "지인(친구)으로부터 고객에 관한 사적 험담을 듣게 된 코치가 중립성을 잃고 고객에 대해 부정적인 생각을 품게 되었습니다. 코치는 고객에 대해 이미 들은 정보를 머릿속에서 지우지 못해 혼란을 겪고 있습니다.", "opts": {"A": "클라이언트에게 코칭 관계를 잠시 중단할 수 있는지 물어본다. 그동안 자기조절에 관한 전문성 개발 과정을 이수한다.", "B": "클라이언트에게 공통의 지인으로부터 클라이언트에 대한 문제가 되는 정보를 들었다고 말한다. 클라이언트에게 자신의 입장을 공유할 기회를 준다.", "C": "부정적인 생각이 떠오르도록 허용한 다음, 그것이 코치의 마음을 통과하여 빠져나가도록 하여 마음이 열린 상태를 유지할 수 있도록 한다.", "D": "친구의 발언이 미친 영향을 인정하고 클라이언트와 열린 관계를 유지하려고 노력한다."}},
+            {"s": "8년간 전업 부모였던 고객이 직장 복귀 및 구직을 위해 6개월 코칭 계약을 맺었습니다. 그런데 코칭 3개월 만에 병원에 채용되면서 원래의 코칭 합의 목표(자격증 갱신 및 구직 지침)가 소멸되었습니다.", "opts": {"A": "고객이 달리 표시하지 않는 한 처음 3개월과 유사한 방식으로 고객을 계속 코칭한다.", "B": "고객이 새로운 역할 내에서 달성하고자 하는 목표가 무엇인지 결정하기 위해 고객과 협력한다.", "C": "고객이 목표를 달성했으므로 코칭 합의를 종료한다.", "D": "고객의 새로운 직책을 축하하고 그들의 삶에서 이러한 변화에 어떻게 적응하고 있는지 묻는다."}},
+            {"s": "사업 성장 컨설팅 계약을 맺은 고객이 자신의 전문성 개발 목표를 위한 코칭도 동시에 받고 싶다고 요청합니다. 코치가 방법론의 차이를 설명했음에도 고객은 두 서비스를 함께 받기를 재확인했습니다.", "opts": {"A": "그 사람과 코칭 계약을 수립한 다음, 컨설팅과 별도로 코칭 세션을 스케줄링한다.", "B": "코칭 계약의 세부사항은 컨설팅에 대해 합의한 것과 유사할 것이라고 말한다.", "C": "그 사람에게 코칭 중에 탐색하고 싶은 전문성 개발 목표가 무엇인지 공유해달라고 요청한다.", "D": "코칭은 컨설팅 작업이 완료된 후에 시작해야 한다고 말한다."}},
+            {"s": "해외 지부 리더가 '동료들과 잘 어울리지 못해 신뢰받지 못한다'는 모호한 피드백을 받고 조직의 기대를 파악하지 못해 막혀 있습니다. 두 번째 세션에서 고객은 현지의 기대를 이해하는 데 어려움을 겪고 있습니다.", "opts": {"A": "클라이언트가 조직의 기대사항을 검토하여 단기 목표를 수립할 수 있도록 지원한다.", "B": "클라이언트에게 조직 문화에 대한 가능한 저항과 관련된 자신의 태도를 성찰하도록 요청한다.", "C": "클라이언트가 근무하고 있는 국가의 사회적 규범과 태도에 대해 배우는 조치를 취하도록 격려한다.", "D": "클라이언트에게 이 국가의 사회적 기대에 대한 중립적인 관점과 그것이 조직에 어떻게 영향을 미칠 수 있는지 제공한다."}},
+            {"s": "스폰서인 매니저가 자녀 입원 사실을 알면서도 성과를 비판하자 신뢰가 완전히 무너진 고객이 긴급 코칭을 요청했습니다. 같은 날 늦게 만난 고객은 여전히 극도로 화가 나 있고 충격을 처리하지 못하고 있습니다.", "opts": {"A": "고객의 고통을 인정하고 고객이 자신의 감정을 표현하고 탐색할 수 있다고 공유한다.", "B": "그 경험이 얼마나 속상했을지에 대해 고객에게 공감을 표한다.", "C": "고객에게 이 세션에서 속상한 회의를 다루기 위해 무엇이 해결되어야 한다고 생각하는지 묻는다.", "D": "고객에게 매니저의 관점을 고려해보라고 제안한다."}},
+            {"s": "장황한 성향의 고객이 세션 마감 3분을 남겨두고 직장에서 일어난 중요한 인식의 순간에 대한 긴 설명을 시작했습니다. 코치는 이 논의가 매우 중요하다고 느끼지만 남은 시간이 3분뿐임을 알아챕니다.", "opts": {"A": "클라이언트에게 남은 3분 안에 이야기를 완료해달라고 요청한다.", "B": "남은 3분을 사용하여 클라이언트의 인식의 순간에 대해 계속 논의한다.", "C": "세션에 3분만 남았다고 공유하고 클라이언트에게 그 시간을 어떻게 사용하고 싶은지 묻는다.", "D": "이 인식의 순간이 매우 중요해 보인다고 말하고 다음 세션에서 이 주제로 시작할 것을 제안한다."}},
+            {"s": "신입 사원 고객이 세션 밖에서 상사의 이메일을 '내 어색한 상사의 이메일 보세요'라는 조롱조의 제목으로 코치에게 전달했습니다. 코치는 고객의 이러한 행동이 상사의 프라이버시 침해라고 느낍니다.", "opts": {"A": "고객에게 상사와의 이메일 소통을 코치와 공유하는 것이 괜찮은지 상사에게 물어보라고 말한다.", "B": "고객의 상사에게 연락하여 상사가 고객과의 소통을 공유할 의향이 있는지 묻는다.", "C": "고객에게 코치가 직접 이메일을 읽는 대신 이메일 내용을 설명해달라고 요청한다.", "D": "코치가 상사의 이메일을 받는 것이 불편한 이유를 고객에게 설명한다."}},
+            {"s": "지원 직원들에게 무례하게 굴어 코칭을 받게 된 관리자의 스폰서 회사가 바로 코치 배우자가 매니징 파트너로 있는 회사임을 알게 되었습니다. 중대한 구조적 이해 상충이 발생한 상황입니다.", "opts": {"A": "회사에 자신의 배우자가 직원이라는 사실을 알려서 회사가 코치-클라이언트 관계에 대해 정보를 얻을 수 있도록 한다.", "B": "클라이언트에게 자신의 배우자가 같은 회사에서 일한다는 것을 알리고, 필요한 정보만 회사와 공유할 것이라고 클라이언트를 안심시킨다.", "C": "코칭 계약서에 자신의 배우자가 클라이언트의 세션에 관한 코치와 회사 간의 어떤 커뮤니케이션에도 포함되지 않을 것이라는 조항을 포함한다.", "D": "클라이언트와 회사에 대한 자신의 개인적 연결을 논의하고, 클라이언트가 자신을 코치로 편안하게 받아들일 수 있는지 결정하게 한다."}},
+            {"s": "재정 관리 코칭 5회 중 4회차에서 고객은 이미 많은 목표를 달성했음에도, '아직 배울 것이 너무 많다'며 낙담하고 진전을 의심하며 자신의 성장에 대한 관점을 잃어버렸습니다.", "opts": {"A": "클라이언트에게 지금까지 무엇을 배웠고 어떤 변화를 만들었는지 생각해보라고 제안한다.", "B": "코칭 관계를 통해 지금까지 무엇을 성취했는지 클라이언트에게 상기시켜준다.", "C": "클라이언트에게 지금까지 성취한 모든 것의 목록을 작성하도록 요청한다.", "D": "클라이언트가 지금까지 어떻게 하고 있는지에 대한 코치의 견해를 공유한다."}},
+            {"s": "화를 잘 내고 성급한 새 고객이 거친 목소리로 말하고 응답할 시간을 주지 않습니다. 신체적 안전 위협은 없으나 고객의 거친 태도로 인해 코치 내면에 상당한 불안감이 유발되고 있습니다.", "opts": {"A": "자신의 불안한 감정을 인정하고 문제를 이해하기 위해 고객이 말하는 것에 초점을 다시 맞춘다.", "B": "자신의 불안한 감정을 인정하고 깊게 숨을 쉬면서, 불안한 감정을 완화시키는 무언가에 집중한다.", "C": "이 세션이 코치가 아닌 고객을 돕는 것에 관한 것이라는 생각에 집중한다.", "D": "고객에게 진정하고 더 천천히 말해서 코치가 응답할 기회를 달라고 요청한다."}},
+            {"s": "첫 세션에서 자신감과 자립심 목표를 결연하게 말하던 고객이, 주변의 지지 부족을 털어놓던 중 예고 없이 갑자기 눈물을 터뜨리며 울기 시작했습니다.", "opts": {"A": "클라이언트가 마음을 추스를 수 있도록 잠깐 휴식을 취할 것을 제안한다.", "B": "클라이언트를 초대하여 깊게 숨을 들이쉬고, 호흡에 집중하며, 부정적인 감정들을 떨쳐버리도록 한다.", "C": "클라이언트에게 매우 강한 감정에 대해 정신 건강 전문가와 상담할 것을 고려해보라고 요청한다.", "D": "깊게 숨을 쉬는 것을 모델링한 다음, 클라이언트에게 이 이슈를 어떻게 탐색하고 싶은지 묻는다."}},
+            {"s": "사업 갈등을 다루던 이미 매우 생산적인 고객이, 갑자기 최근 다녀온 생산성 세미나를 언급하며 자신의 생산성을 높이기 위한 아이디어 브레인스토밍을 코치에게 요청합니다.", "opts": {"A": "이미 매우 생산적인데 왜 세미나에 참석했는지 클라이언트에게 묻는다.", "B": "다른 클라이언트들의 생산성을 높이는 데 도움이 되었던 핵심 습관들을 클라이언트와 공유한다.", "C": "그 세미나가 회사를 더 효과적으로 운영하려는 목표와 어떻게 관련되는지 클라이언트가 공유하도록 초대한다.", "D": "그 세미나가 사업 파트너의 생산성을 높이는 데 어떻게 도움이 될 수 있는지 클라이언트에게 묻는다."}},
+            {"s": "주 80시간 과로 변호사 고객이 회사로부터 1년 잔류가 전제된 주목도 높은 중요 사건을 제안받고, 법률 경력 유지와 새 진로 사이에서 극심한 내적 동요와 갈등을 겪고 있습니다.", "opts": {"A": "고객에게 1년은 매우 빠르게 지나가며 그 시간을 커리어에 대해 무엇을 하고 싶은지 성찰하는 데 사용할 수 있다고 말한다.", "B": "고객에게 어떤 방향을 추구하기로 결정하든 일은 결국 잘 풀리게 되어 있다고 표현한다.", "C": "고객의 내적 고민이 일상적으로 다루기 어려울 것임을 인정한다.", "D": "고객에게 새로운 사건이 어떻게 커리어 경로를 가속화하고 더 의미 있는 일을 제공할 수 있는지 고려해보라고 요청한다."}},
+            {"s": "발언의 어려움을 겪는 임원 고객에게 코치가 \"상사와 대화할 때는 어떠세요?\"라고 묻자, 고객은 \"괜찮아요\"라고 말하면서도 안절부절못하며 자세를 바꾸고 긴장하는 비언어적 반응을 보입니다.", "opts": {"A": "클라이언트에게 말하는 데 어려움을 겪었던 매번 상사가 있었는지 확인해달라고 요청한다.", "B": "클라이언트가 말하는 데 어려움을 겪은 상황들을 고려하여 이러한 감정을 일으키는 원인이 무엇인지 성찰한다.", "C": "코치가 상사를 언급했을 때 클라이언트의 행동 변화를 클라이언트와 공유한다.", "D": "클라이언트에게 새로운 역할에 적응하는 데 완전히 적응했다고 느끼는지 묻는다."}},
+            {"s": "마지막 세션과 스폰서 보고를 앞두고, 고객이 과다 업무로 퇴행하여 '코칭으로 이룬 모든 진전을 잃어버리고 길을 잃었다'며 지치고 슬픈 상태로 무력감을 쏟아냅니다.", "opts": {"A": "고객에게 코칭 과정 동안 이룬 진전에 대해 성찰해보라고 요청한다.", "B": "고객이 이룬 모든 진전이 여전히 그들 안에 있으며, 진정하면 그것이 사실임을 알게 될 것이라고 확신한다고 말한다.", "C": "고객에게 현재 일어나고 있는 일을 다루기 위해 스폰서에게 더 많은 코칭 세션을 요청하라고 제안한다.", "D": "고객의 상황에 대해 직접적으로 탐색하기 전에 고객이 자신의 생각을 말할 충분한 시간을 준다."}},
+            {"s": "새 일자리 제안 수락 여부로 극심한 스트레스를 겪는 고객이 결정을 내리지 못하고 코치에게 \"당신은 제가 어떻게 해야 한다고 생각하세요?\"라며 대신 결정을 요구합니다.", "opts": {"A": "자신이 클라이언트의 상황이라면 무엇을 할 것인지 공유하되, 궁극적으로 결정을 내려야 하는 사람은 자신이 아니라는 점을 분명히 한다.", "B": "클라이언트가 지도를 받기 위해 코치에게 너무 많이 의존하고 있다고 말한다.", "C": "클라이언트에게 추천을 할 수 없으며, 자신의 결정에 대한 주도권을 가져야 하는 사람은 클라이언트라고 말한다.", "D": "클라이언트에게 일과 삶의 균형 관리에 관한 읽을거리를 추천한다."}},
+            {"s": "채용과 R&D 투자 사이에서 딜레마를 겪는 소사업체 고객이 결정을 내리는 것이 힘들다며 코치에게 생각 공유와 결정 대행을 원합니다.", "opts": {"A": "클라이언트에게 얼마나 자주 다른 사람들이 어려운 사업 결정을 대신 내려주도록 하려고 하는지 묻는다.", "B": "클라이언트에게 무엇을 해야 할지 조언을 구하기 위해 컨설턴트에게 연락할 것을 권장한다.", "C": "클라이언트에게 자신의 결정에 대한 주도권(ownership)을 가져야 한다고 공유한다.", "D": "클라이언트에게 이 결정에 대한 주도권(주인의식)을 갖기 위해 어떤 지원이 필요한지 묻는다."}},
+            {"s": "사업 확장을 원치 않는 형제와의 갈등으로 막힌 고객이 첫 세션에서 이 딜레마를 해결하기 위해 코치에게 어떤 조언을 해줄 수 있는지 묻습니다.", "opts": {"A": "코칭은 고객이 자신 안에 있는 답을 찾도록 역량을 강화하는 데 초점을 맞춘다고 설명한다.", "B": "코치의 역할은 컨설턴트처럼 조언과 해결책을 제공하는 것이 아니라고 설명한다.", "C": "코치가 생성한 해결책은 고객이 진정으로 \"소유\"하지 않기 때문에 성공할 가능성이 낮다고 공유한다.", "D": "코칭이 가족 치료 같은 다른 방법론과 어떻게 다른지 설명한다."}},
+            {"s": "20년 의료계 임원이 번아웃으로 산업 외 진로 전환을 목표로 했으나, 시장 가치에 대한 불안 때문에 다시 의료 산업 내 다른 직장 면접을 보기로 목표를 후퇴시켰습니다.", "opts": {"A": "클라이언트가 다가오는 면접을 준비하는 데 코치가 어떻게 도울 수 있는지 공유하도록 초대한다.", "B": "현재 직장을 떠나기로 결정한 클라이언트의 진전을 인정하고 면접에 대해 어떻게 느끼는지 묻는다.", "C": "면접을 계획하고 있는 직무들이 자신의 업무 가치관, 열정, 재능과 어떻게 일치하는지 설명해달라고 요청한다.", "D": "클라이언트가 추구하고 있는 목표를 상기시키고 그 목표를 달성하기 위해 세션에서 무엇을 작업해야 하는지 묻는다."}},
+            {"s": "직원들에게 폭언하여 인사부 의뢰를 받은 영업 매니저가 \"바보들 집단을 관리하고 있으며, 상사 앞에서 못나 보이지 않으려고 영업 목표만 달성하면 그만\"이라며 방어적 태도를 보입니다.", "opts": {"A": "고객에게 관리자로서 팀의 역량을 구축하기 위해 무엇을 할 수 있는지 묻는다.", "B": "고객에게 무엇이 더 중요한지 묻는다 - 영업 목표인가 대인관계인가.", "C": "고객에게 왜 상사의 의견이 그렇게 중요한지 묻는다.", "D": "고객에게 영업 목표 달성이 얼마나 중요한지 들었다고 말하고, 무엇을 두려워하는지 묻는다."}},
+            {"s": "유대감을 원하는 첫 세션 고객이 여러 실패 경험과 고립감을 털어놓자, 코치에게 '고객이 감옥에 갇혀 있고 자유를 원한다'는 개인적 직관이 강하게 떠오릅니다.", "opts": {"A": "클라이언트의 개방성에 감사를 표하고 이 문제에 대한 최선의 결과가 어떤 모습일지 묻는다.", "B": "클라이언트를 초대하여 세션 동안 집중하고 싶은 문제의 작은 부분을 식별하도록 한다.", "C": "클라이언트에게 상황이 시작되기 전에는 어땠는지, 그것이 현재 상태와 어떻게 다른지 묻는다.", "D": "클라이언트에게 문제를 해결하려는 여러 시도들과 무엇이 실패로 이어졌는지 생각해보도록 제안한다."}},
+            {"s": "신뢰 관계를 쌓아온 고객이 종교적 신념을 이야기한 뒤 코치의 생각과 종교성을 질문합니다. 코치는 종교 논의가 코칭 관계를 약화시킬까 봐 우려합니다.", "opts": {"A": "자신의 종교적 신념을 설명하고 그 신념을 클라이언트의 종교적 신념과 비교한다.", "B": "클라이언트에게 왜 이번이 종교적 신념을 처음 언급하는 것인지 묻는다.", "C": "클라이언트의 신념에 대한 코치의 생각을 아는 것이 클라이언트의 목표 달성에 어떻게 도움이 될지 클라이언트에게 묻는다.", "D": "클라이언트에게 자신의 종교적 신념에 대해 논의하는 것을 선호하지 않지만, 클라이언트가 자신의 신념에 대해 이야기하고 싶다면 괜찮다고 말한다."}},
+            {"s": "상사인 친구의 소개로 만난 고객이 연말 퇴사 및 창업 계획을 기밀 하에 밝혔습니다. 코치는 친구가 알게 되었을 때 자신에게 화를 낼까 봐 불안해합니다.", "opts": {"A": "고객에게 고객의 의도에 대해 코치가 알게 된 것을 고객의 매니저에게 공개할 수 있도록 서면 동의를 요청한다.", "B": "고객에게 코치가 고객의 퇴사 계획에 대해 알고 있었다는 것을 매니저에게 말하지 말라고 요청한다.", "C": "자신이 경험하는 감정을 관리하고 세션 내내 고객에게 지지, 공감, 관심을 보여주며 기밀유지를 약속한다.", "D": "고객에게 떠날 것이라는 것을 매니저와 공유하도록 권장하되, 그것이 고객의 결정임을 명확히 한다."}},
+            {"s": "군대 경험으로 리더십을 형성한 리더가 새 조직에 적응해야 하지만, 그렇게 하는 것이 과거의 수년간의 리더십 경험을 평가절하하는 것처럼 느껴져 갈등합니다.", "opts": {"A": "클라이언트에게 그들의 군 경험이 자신과 다른 사람들에게 가치 있으며, 그것을 자랑스러워할 수 있다고 안심시킨다.", "B": "클라이언트가 과거 군 경험이 현재 직무에 대한 통찰을 제공할 수 있고 앞으로 나아가는 데 강점이 될 수 있는 방법을 탐색하도록 한다.", "C": "클라이언트에게 현재 조직이 보유한 리더십 가치와 클라이언트가 그러한 가치와 어떻게 일치할 수 있는지 검토한다.", "D": "클라이언트의 관점을 더 잘 이해하기 위해 자신의 배경에서 군대에 대해 알고 있는 것을 성찰한다."}},
+            {"s": "지적인 고객이 특정 수치심 영역에 대한 탐색을 거부합니다. 코치는 이 부분을 다루는 것이 리더십 향상에 필수적이라 믿지만 고객의 저항을 우려합니다.", "opts": {"A": "자신과 평화로워서 효과적인 리더들의 사례를 공유한다.", "B": "고객에게 자기 신념을 검토하는 것의 최악의 결과와 최선의 결과가 무엇일지 묻는다.", "C": "고객이 이전에 이러한 자기 신념을 다른 사람들과 공유한 적이 있는지, 그렇다면 무슨 일이 일어났는지 묻는다.", "D": "고객의 저항을 인정하고 고객이 자신에 대해 어떻게 더 배우는지 묻는다."}},
+            {"s": "배우 고객이 작은 배역들을 얻었으나 여전히 시스템을 탓하고 있습니다. 9개월 계약 종료 시점에서 코치는 고객이 임파워된 마인드셋을 갖지 못했다고 걱정합니다.", "opts": {"A": "클라이언트에게 코칭 관계를 통해 목표를 달성하는 데 필요한 것을 얻고 있는지 묻는다.", "B": "클라이언트가 보여준 진전과 추가 개발이 필요한 영역에 대한 관찰을 공유하고 클라이언트가 어떻게 반응하는지 본다.", "C": "클라이언트에게 그들이 본 진전이 무엇인지 묻고, 그들의 목표와 파트너십에 대해 어떻게 느끼는지 탐색하도록 돕는다.", "D": "클라이언트에게 더 회복탄력적인 마인드셋을 개발하는 데 더 잘 도울 수 있는 코치를 추천한다."}},
+            {"s": "1년 코칭 후 부사장 고객이 \"통찰 공유를 덜 주저하고 제 사고 패턴에 더 도전해주셨으면 좋겠다\"고 피드백하자, 코치는 스스로 부적절감을 느낍니다.", "opts": {"A": "코치가 고객에게 통찰을 보류했던 때를 고려하여 코치가 더 도전적이어야 하는 상황을 식별한다.", "B": "다른 코치들과 네트워킹하여 그들이 고객으로부터의 피드백을 어떻게 처리했는지 알아본다.", "C": "고객이 코치에게 이 피드백을 제공한 의도를 고려하는 시간을 갖는다.", "D": "고객과 다시 만나기 전에 부적절함의 느낌을 극복하는 시간을 갖는다."}},
+            {"s": "고객은 직장에서 침묵해야 하는 이유를 독립적 사고를 막는 조직 문화 탓으로만 돌리며, 자신을 문제의 일부로 전혀 보지 않는 패턴을 반복합니다.", "opts": {"A": "동료들이 직장에서 서로 다른 아이디어를 공유했던 순간들을 떠올려보도록 고객에게 요청한다.", "B": "고객에게 왜 직장에서 독립적인 사고가 허용되지 않는다고 믿는지 질문한다.", "C": "비록 환영 받지 못하더라도, 자신의 독립적인 생각을 표현하는 것을 막는 것이 무엇인지 고객에게 질문한다.", "D": "직장에서 고객이 직면한 문제들의 가능한 모든 원인을 나열해보도록 요청한다."}},
+            {"s": "\"삶을 완전히 바꿀 것\"이라는 새 고객의 과도한 기대에 코치는 자신의 역량이 평가받고 기대를 채우지 못할까 봐 두려움과 연결 곤란을 깨닫습니다.", "opts": {"A": "그 순간에는 아무 말도 하지 않고 세션 동안 그 생각을 마음 뒤편에 둔다.", "B": "클라이언트와 형식적으로 진행하면서, 그들이 스스로 결론에 도달하여 관계를 종료하도록 허용한다.", "C": "의식적으로 클라이언트에게 집중하여 그 순간 이러한 생각들로부터 주의를 돌리고, 나중에 멘토 코치나 슈퍼바이저와 논의한다.", "D": "자신을 연결하지 못하게 막고 있던 무언가를 방금 깨달았으며, 이제 상황이 나아질 것이라고 말한다."}},
+            {"s": "말 끊기 습관으로 코칭을 받던 고객이 세션 중 코치 말을 끊으려다 멈추고 \"죄송합니다, 방금 말을 끊으려던 것을 깨달았어요\"라고 실시간 자각을 표현합니다.", "opts": {"A": "고객에게 의사소통 기술을 계속 향상시키는 길에서 코치로부터 어떤 자원이 필요한지 묻는다.", "B": "고객의 학습 경험을 축하하며 코칭 세션을 마무리한다.", "C": "고객에게 이 깨달음을 업무 환경에서 어떻게 실천에 옮길 수 있는지 묻는다.", "D": "고객에게 직장에서 다른 사람들의 말을 끊는 자신을 얼마나 자주 잡아내는지 묻는다."}},
+            {"s": "노부모를 모시며 적응에만 집중하는 고객이 부모의 언어적 학대를 담담히 전하자, 코치가 고객을 대신해 부모를 향해 강한 분노와 화를 느낍니다.", "opts": {"A": "클라이언트에게 이것을 듣는 것이 자신을 화나게 한다고 말하고, 클라이언트가 괴로워하든 안 하든 부모의 행동이 해롭다는 것을 알린다.", "B": "클라이언트에게 자신이 화가 났다는 것을 알리되, 그 분노는 부모를 향한 것이지 클라이언트를 향한 것이 아니라고 안심시킨다.", "C": "세션을 재개하기 전에 사적으로 분노를 표출할 수 있도록 짧은 시간 동안 세션에서 물러난다.", "D": "클라이언트에게 집에 다른 사람이 있는 것에 적응하는 것이 어떻게 보이고 느껴지는지 묘사해달라고 요청한다."}},
+            {"s": "창의적 문제 해결이 목표인 고객이 새로운 아이디어를 논의할 때마다 장애물과 불가능한 이유를 빠르게 지적하는 비판적 패턴을 보입니다.", "opts": {"A": "고객이 자신의 계획에서 장애물을 찾는 경향이 있다고 관찰한 내용을 공유하고, 왜 그렇게 비판적인지 질문한다.", "B": "아이디어에 대한 고객의 비판적인 태도가 이 목표를 달성하는 데 어려움을 겪는 이유일 수 있는지 고려해보도록 초대한다.", "C": "고객이 목표를 달성하는 데 대한 장애물을 반복해서 언급하고 있다는 관찰을 공유하고, 전반적으로 해결책을 생각할 때 이런 패턴이 자신에게 있는지 알아차리는지 질문한다.", "D": "고객에게 장애물에 초점을 두는 것이 사실은 목표를 향해 일하는 것에 대한 저항일 뿐이라는 것을 스스로 알아차리는지 질문한다."}},
+            {"s": "성과 평가 개인 성장 목표를 세우려던 고객이 시작 직후 동료와의 논쟁에 화가 나 20분 동안 논쟁 이야기만 쏟아내며 원래 목표를 다루지 못했습니다.", "opts": {"A": "클라이언트에게 세션을 다가오는 성과 평가에 집중하고 싶다고 말하며 시작했으므로, 그것이 이번 세션의 논의 주제가 되어야 한다고 상기시킨다.", "B": "클라이언트에게 세션의 초점이 다가오는 성과 평가 중에 공유할 개인 성장 목표에 있기를 요청했다는 것을 상기시키고, 지금 그 초점을 바꾸고 싶은지 묻는다.", "C": "동료와의 논쟁과 다가오는 성과 평가 사이에 어떤 연결이 있는지 코치가 이해할 수 있도록 동료와의 논쟁에 대해 충분한 질문을 한다.", "D": "클라이언트에게 동료와의 논쟁과 다가오는 성과 평가에 대해 느끼고 있을 수 있는 어떤 감정 사이에 연결이 있는지 묻는다."}},
+            {"s": "합병 업무로 압도된 고객에게 코치가 덜 부정적인 언어로 리프레이밍하라고 요구하자, 고객이 \"제가 좌절하고 있다는 게 안 보이세요?\"라고 소리쳤습니다.", "opts": {"A": "고객에게 코치가 고객의 상황 설명에 어떻게 반응했으면 좋았을지 묻는다.", "B": "잠시 멈추어 고객의 말을 내면화하고 고객이 다음에 무슨 말을 하는지 기다린다.", "C": "고객에게 코치가 그들에게 소리를 질렀다면 어떤 기분이 들었을지 묻는다.", "D": "고객에게 코치의 초기 반응이 잘 받아들여지지 않았음이 분명하고, 코치로서 순간순간 무엇이 최선인지 항상 알 수는 없다고 말한다."}},
+            {"s": "책 집필이 목표인 교수가 시간대까지 정했으나 3회 세션 연속 실행하지 못하고 다음 세션 전 쓰겠다는 동일한 약속만 반복합니다.", "opts": {"A": "클라이언트에게 다음 세션 전에 얼마나 많은 글쓰기를 하기로 약속하는지 묻는다.", "B": "클라이언트가 쓰기 과정을 시작하는 것에 대해 스스로 책임을 지는 방법을 식별하도록 돕는 질문을 한다.", "C": "클라이언트에게 다음 세션 전에 적어도 첫 번째 장을 쓰도록 제안한다.", "D": "클라이언트에게 그들의 책임을 지도록 도울 수 있는 다른 사람들이 있는지 묻는다."}},
+            {"s": "사업 성장은 잘 달성하고 있으나 스트레스 해소로 음주를 자주 언급하는 고객을 보며 코치가 건강상 우려를 품게 됩니다.", "opts": {"A": "고객의 음주 관련 발언 중 일부에 대해 우려를 표현한다.", "B": "고객에게 음주 문제로 보이는 것에 대한 전문가 의뢰를 원하는지 묻는다.", "C": "고객에게 자신이 음주 문제가 있다고 생각하는지 묻는다.", "D": "고객에게 알코올 상담을 위한 전문가 의뢰를 제공한다."}},
+            {"s": "판단 확신이 목표인 고객이 계약 종반에 코치에게 더 지시적인 스타일로 코치의 지혜를 공유해달라고 부탁합니다.", "opts": {"A": "고객에게 그 요청은 기분 좋지만, 조언을 주는 것은 코칭의 정의에 어긋난다고 말한다.", "B": "고객이 자신에게 무엇이 최선인지 본능적으로 알고 있음을 존중하며, 고객의 요청 방향대로 코칭한다.", "C": "고객에게 그 요청은 기분 좋지만, 고객이 성장하고 앞으로 나아가기 위해서는 자신의 지혜를 사용해야 한다고 말한다.", "D": "고객에게 고객 자신의 지혜와 코치의 지혜 사이에 어떤 차이가 있다고 생각하는지 묻는다."}},
+            {"s": "부하와의 어려운 대화를 준비하는 고객이 돕고 싶다고 말하면서도 어조에서는 벌주고 싶어 하고 불신하는 태도가 감지됩니다.", "opts": {"A": "클라이언트에게 직속 부하와의 상호작용에서 그들의 목표가 무엇인지, 무엇을 달성하려고 하는지 묻는다.", "B": "클라이언트에게 이 직속 부하에 대해 이야기하는 방식에서 뭔가 다르게 느껴진다고 공유하고, 클라이언트가 그것을 탐색하도록 요청한다.", "C": "클라이언트가 이 직속 부하가 정말로 변할 수 있다고 생각하지 않고, 그들을 벌주고 싶어한다는 느낌을 받고 있다고 말한다.", "D": "클라이언트에게 이 직속 부하에 대한 그들의 태도에 영향을 미칠 수 있는 이 사람에 대해 독특한 점이 있는지 묻는다."}},
+            {"s": "사회적 기술 부족 피드백을 받은 고객이 첫 세션에서 코치의 라포 질문에 \"목표와 무슨 상관이냐\"며 반문합니다.", "opts": {"A": "코칭이 어려울 수 있고 코치가 그들의 좌절감을 이해한다고 공유한다.", "B": "고객이 일을 잘 수행하는 것에 관심이 있는 것 같고, 코치가 그들의 업무 성격에 대해 더 이해하고 싶다고 공유한다.", "C": "고객에게 질문이 코칭 과정의 핵심 부분이며, 질문에 답하지 않으면 절대 진전을 이루지 못할 것이라고 말한다.", "D": "고객에게 관계를 발전시키는 데 더 잘 작동하는 방법을 브레인스토밍하기 위해 코치와 파트너로서 협력하자고 초대한다."}},
+            {"s": "자존감이 낮아 기여를 인정하지 못하던 고객이 전문 기관으로부터 큰 상을 받고 열심히 노력해서 행복하다고 보고합니다.", "opts": {"A": "클라이언트가 자존감 향상에 성공했으므로 새로운 목표를 개발하기 위해 파트너십을 맺는다.", "B": "클라이언트에게 이 상을 받은 것이 직장에서의 자신의 기여에 대해 느끼는 방식을 바꾸었는지 묻는다.", "C": "클라이언트에게 이 영예를 긍정적인 자기 대화에 포함시켜 자존감을 더욱 구축하도록 제안한다.", "D": "클라이언트에게 그들의 성공을 어떻게 축하할 계획인지 묻는다."}},
+            {"s": "네트워크 확장을 원하는 고객이 너무 많은 세부 사례를 장황하게 늘어놓아 코치가 핵심 이슈를 분별하기 어렵습니다.", "opts": {"A": "고객이 공유한 내용을 바탕으로 피드백을 제공한다.", "B": "문제를 더 탐색하기 전에 고객에게 무엇을 말하려고 하는지 명확히 해달라고 요청한다.", "C": "문제를 더 탐색하기 전에 고객이 말한 내용에 대한 해석을 공유한다.", "D": "문제를 더 탐색하기 전에 고객에게 핵심 이슈를 한두 문장으로 요약해달라고 요청한다."}},
+            {"s": "몇 달간 만난 고객이 지난주 코칭을 완전히 잊고 이번 세션에서 무엇에 대해 코칭받아야 할지 모르겠다고 합니다.", "opts": {"A": "초기 세션에서 설정한 목표를 검토하고 그 개발 계획을 업데이트해야 하는지 함께 결정한다.", "B": "이전 코칭 세션의 노트를 검토하고 고객이 이번 세션에서 계속 논의할 주제 중 하나를 선택하도록 권장한다.", "C": "고객에게 지난 몇 주 동안 무슨 일이 있었는지 설명하도록 요청하고, 세션 동안 더 논의할 수 있는 주제를 파악한다.", "D": "코칭 세션을 다음 주로 재조정하고 고객에게 달성할 구체적인 목적을 준비해서 오겠다고 약속하도록 요청한다."}},
+            {"s": "15년 우수 금융 전문가가 매니저에게 연봉 인상을 말하기 두려워 2년 연속 기회를 놓쳤고 올해도 두려움에 떱니다.", "opts": {"A": "고객에게 매니저에게 연봉 인상을 요청하는 것에 대해 가장 두려워하는 것이 무엇인지 묻는다.", "B": "고객과 함께 연간 성과 평가 미팅을 위한 목표를 만들고 고객이 그 목표를 달성할 수 있는 행동 방식을 나열한다.", "C": "고객이 성과 평가 미팅 전에 매니저와의 대화를 미리 경험할 수 있도록 역할극 연습을 하자고 제안한다.", "D": "고객에게 두려움을 극복했다고 상상해보고, 매니저에게 연봉 인상을 요청할 만큼 자신감이 생겼다는 신호가 무엇일지 공유해달라고 요청한다."}},
+            {"s": "이혼 계획을 밝힌 고객의 배우자가 코치가 좋아하는 전문적 동료입니다. 코치의 충격을 본 고객이 의견을 묻습니다.", "opts": {"A": "고객의 배우자를 좋아하고 존중하기 때문에 이 소식을 듣고 속상하다고 인정하되, 그것은 코치가 관리해야 할 문제라고 말한다. 그런 다음 이 결정이 고객의 코칭 목표와 일치하므로 아마도 좋은 생각일 것이라고 말한다.", "B": "고객에게 자신의 반응은 중요하지 않으며, 고객의 결정에 대해 자신이 어떻게 생각하는지도 중요하지 않다고 말한다. 왜냐하면 그것은 고객이 내릴 결정이기 때문이다.", "C": "이혼이 큰 결정이기 때문에 놀랐다고 인정한다. 그런 다음 고객이 무엇을 결정하든 이를 지원하기 위해 고객과 함께 일할 것이라고 말한다.", "D": "이혼이 큰 결정이기 때문에 놀랐다고 인정한다. 그런 다음 고객이 코치보다는 결혼 및 가족 치료사를 만나는 것이 더 나을 수 있다고 말한다."}},
+            {"s": "임원 고객이 숨 쉴 틈 없이 매우 빠르게 말해 코치가 핵심을 파악하기 어렵고 소통을 방해받는다고 느낍니다.", "opts": {"A": "고객에게 너무 빠르게 말하고 있어서 그들이 말하는 것의 중요성을 이해하기 어렵다고 말한다. 그런 다음 방금 말한 마지막 내용을 생각해보고 매우 천천히 다시 말해달라고 요청한다.", "B": "고객에게 너무 빠르게 말하고 있어서 공유하고 있는 것 뒤에 있는 감정을 실제로 느끼지 못할 수도 있다고 말한다. 그런 다음 고객에게 자신이 말한 것 중 매우 의미 있는 것을 골라서 매우 천천히 다시 말해달라고 요청한다.", "C": "고객에게 코치가 따라가기에는 너무 빠르게 말하고 있으며, CEO도 아마 같은 느낌일 것이라고 말한다. 그런 다음 고객에게 말하는 속도를 늦추기 위해 무엇을 할 수 있는지 묻는다.", "D": "고객에게 누군가 그들이 꽤 빠르게 말한다고 공유한 적이 있는지 묻는다. 그런 다음 이것을 탐색해보라고 요청한다."}},
+            {"s": "새 리더십 업무를 맡은 의사 고객이 '업무가 쉽다'고 말하면서도 머리를 문지르며 긴장된 신체 언어를 보입니다.", "opts": {"A": "고객이 이 새로운 역할에서 높은 수준으로 수행할 수 있는 매우 유능한 사람이라고 안심시킨다.", "B": "고객에게 새로운 업무가 스트레스가 아니라고 말하는 것을 들었지만, 신체 언어(바디랭귀지)에서 약간의 긴장을 알아차리고 있다고 알려준다.", "C": "고객의 신체 언어(바디랭귀지)가 그들이 말하는 것이 사실이 아님을 시사한다고 알려준다.", "D": "신체 언어를 주목하고 새로운 역할이 왜 스트레스를 유발하는지 물어본다."}},
+            {"s": "블로그 기록 과제를 실행하지 못한 고객이 세션 초반과 후반에 걸쳐 '실패했다'며 지속적인 낙담을 보입니다.", "opts": {"A": "고객에게 블로그는 잊어버리라고 격려하며, 고객의 목표를 달성할 수 있는 다른 방법들을 찾을 수 있다고 말한다.", "B": "고객이 우울하고 낙담한 것처럼 보인다는 관찰을 공유하고 그 이면에 무엇이 있는지 묻는다.", "C": "고객이 블로그를 두 번째로 언급한 것을 주목하고, 세션 사이에 연결하고 싶은 다른 방법이 무엇인지 고객에게 묻는다.", "D": "고객이 블로그에 글을 쓰는 데 어려움을 겪었다고 두 번 언급했다는 것을 인정하고, 블로그를 쓰는 것과 실행 과제를 완료하는 것 중 어느 것이 더 중요하게 느껴지는지 묻는다."}},
+            {"s": "특정 동료에 대해 긍정적으로 말하지만 바디랭귀지는 긴장과 불안을 보이다 얼굴이 붉어지며 화제 전환을 요청합니다.", "opts": {"A": "고객에게 이 동료에 대해 고객이 다르게 반응하게 만드는 무언가가 있는지 묻는다.", "B": "고객이 업무 주간 동안 일어난 긍정적인 것들에 대해 설명한 것을 요약한다.", "C": "고객이 코치와 다른 주제를 논의할 때도 일반적으로 얼굴이 빨개지는지 고려하여 패턴을 식별한다.", "D": "침묵 속에서 잠시 멈추어 고객에게 다른 무언가가 떠오르는지 본다."}},
+            {"s": "종신 재직을 목표로 하는 교수가 학과장 회의에서 공개적으로 발언 기회를 무시당한 후 울면서 화와 수치심을 토로합니다.", "opts": {"A": "고객이 새로운 대학 정책에 관한 토론에 기여할 유용한 요점들을 아마도 가지고 있었을 것이라고 인정한다.", "B": "고객이 속상해하고 있음을 인정하고, 상황을 그렇게 개인적으로 받아들이지 않았다면 무엇을 배울 수 있었을지 묻는다.", "C": "고객에게 토론 중에 표현했을 의견이 방에 있던 다른 사람들을 화나게 했을지 묻는다.", "D": "고객이 자신의 감정을 코치에게 그렇게 개방적이고 솔직하게 공유해준 것에 감사를 표한다."}},
+            {"s": "스폰서의 3개월 목표가 과도함을 알면서도 계약 유지 우려로 침묵했던 코치. 고객이 걱정과 피로를 호소합니다.", "opts": {"A": "고객에게 스폰서의 기대를 충족하려면 계속 앞으로 밀고 나가야 한다고 상기시킨다.", "B": "고객이 얼마나 많은 것을 성취했는지 성찰하도록 격려하고 계속 밀고 나갈 수 있다고 말한다.", "C": "고객의 우려를 인정하고 코칭 합의에 대해 어떻게 느끼는지 공유하도록 요청한다.", "D": "고객에게 실행 과제들이 계속 서로를 기반으로 쌓이며 더 쉬워질 것이라고 말한다."}},
+            {"s": "상사 질문에 고객이 울면서 \"상사는 저를 미워해요. 만족하세요? 제가 말했잖아요\"라며 날 선 방어 반응을 보입니다.", "opts": {"A": "고객이 방금 많은 고통을 주고 있던 무언가를 공유한 것처럼 느껴진다고 말한다.", "B": "고객이 평정심과 침착함을 되찾는 데 무엇이 도움이 될지 묻는다.", "C": "고객이 상사가 싫어하는 팀의 유일한 사람일 가능성은 낮다고 말한다.", "D": "고객이 왜 상사가 자신을 싫어한다고 느끼는지 묻는다."}},
+            {"s": "타지에서 지원 체계 없이 고립된 고객이 공황 상태에 빠져 동일한 퇴사 및 무력감 이야기를 울면서 반복합니다.", "opts": {"A": "고객에게 이 순간 경험하고 있는 신체 감각을 설명해달라고 요청한다.", "B": "고객이 느끼는 스트레스를 통제하기 위해 취할 수 있는 행동을 공유하도록 초대한다.", "C": "고객에게 지난 세션 이후 삶에서 무슨 일이 있었는지 설명해달라고 요청한다.", "D": "코치가 극복한 압도적인 경험을 고객과 공유한다."}},
+            {"s": "진로 전환 고객이 세션 초반 10분 동안 세 가지 걱정을 쏟아내며 에너지를 소진하고 남은 시간은 촉박합니다.", "opts": {"A": "고객이 공유한 내용을 설명하고 그것이 정확한지 묻는다.", "B": "세션의 목표를 제안하고 고객에게 그 아이디어에 대해 응답하도록 요청한다.", "C": "고객이 자신의 목표를 달성할 수 있다는 격려를 표현한다.", "D": "고객이 공유한 세 가지 핵심 포인트를 요약하고 고객에게 어느 것에 집중하고 싶은지 묻는다."}},
+            {"s": "평소 긍정적인 고객이 연례적인 심각한 무기력과 불면 등 '슬픈 시기'를 이번 코칭에서 직접 다루겠다고 요청합니다.", "opts": {"A": "도움을 받고 싶어 하는 것은 좋지만, 임상적 수준의 불안과 우울증이 있는 것처럼 들리며 코칭은 이러한 문제를 다루는 최선의 방법이 아니라고 말한다.", "B": "불안과 우울증에 대해 읽어보고, 다음 코칭 세션에서 이러한 문제들에 대해 후속 논의를 하겠다고 제안한다.", "C": "고객이 정신건강 전문가로부터 평가를 받을 수 있을 때까지 코칭 프로세스를 보류할 것을 제안한다.", "D": "코칭이 최선의 선택이 아닐 수 있는 상황들이 있다고 말하고, 고객이 자신의 \"슬픈 시기\"에 대해 의료 전문가와 논의한 적이 있는지 묻는다."}},
+            {"s": "외출과 에너지가 목표였으나 운동 실패 후 체중 감량과 외모에 집착하며 좌절하자 코치는 연결성을 찾지 못합니다.", "opts": {"A": "이것들이 고객이 제기하는 새로운 우려사항임을 인정하고, 규칙적인 운동이 그러한 문제들에도 도움이 될 것이라고 안심시킨다.", "B": "고객의 우려사항을 인정하되, 고객에게 운동을 하려던 원래 이유가 무엇이었는지 상기시킨다.", "C": "이것들이 새로운 우려사항처럼 들린다고 말하고, 이러한 추가적인 우려사항에 비추어 목표를 재고하고 싶은지 묻는다.", "D": "이러한 관찰 내용을 고객과 공유하고, 운동이 고객의 에너지 수준과 밖으로 더 나가고 싶은 욕구에 어떤 영향을 미쳤는지 묻는다."}},
+            {"s": "배우자와 소통을 위해 산책하던 중 말다툼과 폭언이 발생해 고객이 진전이 없다며 무력감을 호소합니다.", "opts": {"A": "양질의 시간을 함께 보내는 것이 잘 되지 않았으므로 고객과 함께 새로운 실행 과제들을 브레인스토밍한다.", "B": "고객이 그 말다툼에 대해 성찰하도록 초대하고, 고객이 이 경험으로부터 앞으로 가져갈 새로운 학습을 식별하도록 지원한다.", "C": "고객에게 배우자에게 한 말의 유형을 설명해달라고 요청하여, 코치가 고객이 배우자의 상처받은 감정을 회복하는 작업을 지원할 수 있도록 한다.", "D": "양질의 시간을 함께 보내는 실행 과제를 이행한 고객의 노력에 박수를 보낸다."}},
+            {"s": "과제를 매번 안 지키던 고객이 실행 계획을 반복하며 동의하는 동안 의자에서 불편하게 몸을 움직였습니다.", "opts": {"A": "고객의 신체 언어를 인정하고 고객이 목표를 달성할 수 있을 것이라는 확신을 표현한다.", "B": "고객의 신체 언어에 대해 언급하지 않음으로써 고객의 실행 계획 이행 의지를 약화시키지 않는다.", "C": "고객에게 이 실행 계획을 달성할 수 있을지에 대해 어떻게 느끼는지 묻는다.", "D": "고객에게 신체 움직임을 알아챘다고 말하고, 만약 고객의 몸이 말할 수 있다면 무엇을 말할지 묻는다."}},
+            {"s": "대학원생 고객에게 자녀 같은 부모 감정을 느끼며 직접적 지침과 문제 해결을 해주고 싶은 유혹으로 방해를 받습니다.", "opts": {"A": "세션 중에 부모 같은 감정이 올라올 때, 그러한 감정에 따라 행동하는 것을 피하기 위해 다른 것에 집중한다.", "B": "멘토 코치나 슈퍼바이저와 고객에 대한 생각과 감정에 대해 이야기한다.", "C": "이러한 생각과 감정 때문에 고객을 코칭할 수 없다고 고객에게 알린다.", "D": "고객을 더 객관적으로 대할 수 있는 다른 코치에게 의뢰한다."}},
+            {"s": "하루 13시간 일하고 5시간 미만 수면을 취하는 컨설팅 매니저 고객이 심장마비가 올까 봐 극도의 불안을 호소합니다.", "opts": {"A": "고객에게 임박한 스트레스 유발 응급 상황을 배제하기 위해 의학적 진단을 받기 위해 의사를 방문하라고 제안한다.", "B": "코치의 고객이 누구인지 공개하지 않고 직속 부하 직원의 건강에 대해 고객의 상사와 공유한다.", "C": "고객에게 코치가 그들이 설명한 내용을 적절한 당국에 보고해야 한다고 말한다.", "D": "고객에게 도움이 될 수 있는 스트레스 감소 운동을 공유한다."}},
+            {"s": "3회 세션 동안 진전이 없고 필요성을 못 느낀 고객이 계약서상의 '언제든 종료 가능' 권리를 행사해 종료를 요구합니다.", "opts": {"A": "고객이 이유에 관계없이 코칭 관계를 종료할 수 있도록 허용한다.", "B": "고객에게 생각할 시간을 갖고 관계를 종료하기 전에 한 번 더 세션을 만나자고 제안한다.", "C": "관계를 끝내기로 한 고객의 결정을 받아들이되, 고객이 먼저 시작한 작업을 완료할 것을 제안한다.", "D": "고객에게 세션의 목표와 코칭이 그 목표를 달성하는 데 도움이 될 수 있음을 상기시킨다."}},
+            {"s": "대외 활동을 두려워하던 고객이 뜻밖에도 대학 강의 문의와 자원봉사 연락을 실행했다고 홀리듯 말합니다.", "opts": {"A": "고객의 성취를 인정하고 진전에 대해 칭찬한다.", "B": "고객에게 이러한 진전을 유지하기 위해 어떤 기술이 필요한지 고려해보라고 요청한다.", "C": "이러한 개선이 이루어진 후에도 이 주제가 여전히 고객에게 적절한 목표인지 묻는다.", "D": "진전에 대해 놀라움을 표현하고 무엇이 고객으로 하여금 그런 전화를 하게 만들었는지 공유해달라고 요청한다."}},
+            {"s": "스폰서인 상사가 세션 내용과 고객의 발언을 알려달라며 반복 전화하여 코치를 압박하고 괴롭힙니다.", "opts": {"A": "상사에게 코칭 계약서 사본을 이메일로 보내 그들의 요청이 승인될 수 없음을 설명한다.", "B": "상사에게 제공할 수 없는 정보를 요청하며 반복적으로 전화하는 것을 중단하라고 말한다.", "C": "고객에게 상사가 그렇게 강압적으로 행동할 때 어떻게 대처하는지 물어본다.", "D": "상사를 초대하여 코치가 코칭 계약의 윤리적 프레임워크를 명확히 할 수 있도록 논의에 참여하도록 한다."}},
+            {"s": "승진 조건으로 의무 배정된 고객이 첫 만남에서 \"솔직히 코치와 일하고 싶지 않다\"고 저항을 솔직히 드러냅니다.", "opts": {"A": "코칭이 무엇이며 사람들이 전문적 잠재력을 최대화하는 데 어떻게 도움이 될 수 있는지 설명한다.", "B": "코칭은 의욕이 없는 고객과는 효과가 없다고 말하고, 마음이 바뀌면 연락하라고 요청한다.", "C": "고객의 솔직함에 감사를 표하고, 코칭에 참여하도록 요청받은 것에 대해 어떻게 생각하고 느끼는지 더 공유하도록 초대한다.", "D": "고객에게 코칭이 어떻게 작동하는지 공유하고, 코칭이 고객의 승진 달성에 어떻게 도움이 될 수 있는지 탐색한다."}},
+            {"s": "분석적인 고객이 두 이직 제안의 장단점을 스프레드시트에 완벽히 동일한 수로 정리하고도 결정을 내리지 못합니다.", "opts": {"A": "고객이 어느 직장이 유리한지 식별하는 데 도움을 주기 위해 목록의 각 장단점에 대해 더 자세히 정보를 제공하도록 요청한다.", "B": "목록의 각 장단점을 논의한 후, 고객이 어느 일자리 제안을 수락해야 하는지에 대한 자신의 의견을 제시하되, 집착 없이 그렇게 한다.", "C": "목록에 더 많은 요소들을 식별하여 선택이 분명해질 때까지 계속 장단점을 비교한다.", "D": "고객에게 스프레드시트를 옆에 두라고 요청한다. 그런 다음 각 일자리 제안을 수락하는 것에 대해 생각할 때 직장에서 무엇이 그들을 편안하게 만드는지 식별하도록 요청한다."}},
+            {"s": "저속한 언어 자제를 요청받고 사과했던 고객이 다음 세션에서 욕설을 다시 사용해 코치가 강한 불쾌감을 느낍니다.", "opts": {"A": "고객의 언어 선택이 그들의 일부이며 의식적으로 불쾌하게 하려는 선택이 아니라는 것을 상기한다.", "B": "세션을 중단하고 고객과의 관계를 종료한다.", "C": "감정이 사라지도록 두고 더 많은 임원 코칭을 수행하려는 코치의 목표에 집중한다.", "D": "이 사업 분야를 추구하고 싶기 때문에 부정적 반응을 무시한다."}},
+            {"s": "첫 IT 회사 사장을 맡은 고객이 과중한 중압감으로 자신감을 잃고 완전히 압도되고 길을 잃었다고 호소합니다.", "opts": {"A": "기술 회사가 고객이 유능하다고 믿지 않았다면 그들을 고용하지 않았을 것이라고 안심시킨다.", "B": "고객과 함께 고객의 스트레스를 줄이고 자기효능감을 향상시키는 것을 목표로 하는 구체적인 단계가 포함된 실행 계획을 만든다.", "C": "리더십 역할에 적합하지 않다는 느낌에 맞서는 전략으로 더 긍정적인 자기 대화를 하도록 고객에게 제안한다.", "D": "고객의 불안감과 취약함을 인정하고, 그들이 통제할 수 있다고 느끼는 가장 작은 단계가 무엇인지 묻는다."}},
+            {"s": "계약된 모든 목표를 완수한 고객이 마지막 세션에서 관계 연장을 요청했고 코치 역시 관계에 대한 흥분을 느낍니다.", "opts": {"A": "고객이 코칭 관계를 연장하려는 목적을 공유하도록 초대하고, 그 목적을 달성하기 위한 계획을 함께 개발한다.", "B": "코칭 관계를 계속하고 싶다는 바람을 전달하고, 고객이 더 큰 회복탄력성을 달성할 수 있는 방법에 대한 계획을 시작한다.", "C": "고객과 코칭 관계를 계속하기로 동의하고, 이전의 성공을 기반으로 발전시킬 수 있다는 흥분을 표현한다.", "D": "현재 코칭 계약이 달성되었으므로 코칭 관계가 더 이상 필요하지 않다고 말한다."}},
+            {"s": "작가 고객이 생활 습관 개선을 원하지만 어려움을 온갖 추상적 은유로 묘사하느라 실행 에너지가 전혀 없습니다.", "opts": {"A": "고객에게 은유를 사용하여 실행 계획을 개발하도록 초대하고, 단계들을 은유의 관점으로 개념화한다.", "B": "고객과 함께 그들이 명시한 목표를 향한 장애물에 대한 묘사를 탐색한다.", "C": "행동을 취하기 위한 준비로 고객에게 더 구체적인 용어로 말하고 생각하도록 요청한다.", "D": "고객이 목표를 향해 일하는 더 구체적인 접근 방식이 어떤 모습일지 탐색하도록 지원한다."}},
+            {"s": "스폰서가 부진한 직원들의 코칭을 의뢰하며 '개선되지 않으면 해고되지만 당사자들에게는 비밀로 해달라'고 요구합니다.", "opts": {"A": "고객 비밀유지가 모든 코칭 합의의 기초라는 점을 고려하여, 코칭 관계가 신뢰에 기반할 수 있도록 직원들에게 그들의 직업이 위험에 처해 있다고 말한다.", "B": "스폰서에게 그들의 조건을 따를 수 없다고 알리고 코칭 계약을 종료한다.", "C": "투명성이 코치와 고객 간 신뢰 구축에 근본적이라는 것을 스폰서에게 다시 설명한다. 스폰서가 계속해서 이 정보를 직원들에게 숨길 것을 요청한다면, 코칭 계약을 종료한다.", "D": "스폰서에게 개인적으로 그들의 조건을 따르는 것이 불편하지만, 그들의 필요에 더 잘 맞을 수 있는 다른 코치들의 연락처 정보를 제공하겠다고 알린다."}},
+            {"s": "유창하지 않은 언어를 쓰는 대학생 고객과 배정된 코치가 완전히 이해하지 못할까 봐 시작도 전에 불안해합니다.", "opts": {"A": "고객의 언어를 이해할 수 없을 때에도 이해를 표시하기 위해 고객의 신체 언어를 미러링한다.", "B": "고객의 경험에 대한 더 완전한 이해를 이끌어내기 위해 고객으로부터 이해한 내용을 바탕으로 질문한다.", "C": "고객과의 논의 중에서 더 이해하기 쉬운 요소들에 주의와 질문을 집중한다.", "D": "자신의 언어 능력이 고객을 완전히 이해할 수 없게 하므로 이 학생을 코칭할 수 없다고 세미나 강사에게 말한다."}},
+            {"s": "승진 코칭에서 고객이 수주 동안 코치의 말을 끊고 일방적인 불만과 하소연만 쏟아내는 패턴을 보입니다.", "opts": {"A": "다음 세션 시작 시, 고객이 코칭 합의를 존중하지 않고 있기 때문에 코칭 합의를 종료할 때라고 고객에게 알린다.", "B": "현재 방향을 계속 유지한다. 이것이 분명히 고객이 원하고 필요로 하는 것이며, 고객은 불만을 토로할 사람이 필요하기 때문이다.", "C": "고객에게 그들의 합의가 파트너십에 기반하고 있음을 상기시킨다.", "D": "다음 세션을 시작하면서 고객에게 파트너십으로 일하겠다는 코칭 합의를 존중하지 않으면 이번이 마지막 세션이 될 것이라고 알린다."}},
+            {"s": "팀워크 평가 점수가 낮은 이유를 알고 싶다며 문서를 가져온 고객이 설명 코멘트를 함께 보자는 제안을 거부합니다.", "opts": {"A": "고객에게 팀워크 기술을 어떻게 개선할 수 있는지에 대한 행동적 사례를 공유하도록 초대한다.", "B": "고객에게 팀워크 기술을 개선하는 방법에 대해 읽을 수 있는 자료를 제공한다.", "C": "고객에게 왜 설명적 코멘트를 함께 검토하고 싶지 않은지 물어본다.", "D": "고객이 먼저 혼자 검토한 후에 설명적 코멘트를 함께 검토하는 것이 여전히 좋은 생각이라고 말한다."}},
+            {"s": "온라인 세션에서 고객이 피젯 가젯을 사용하며 아래를 보지만 전반적 참여와 몰입 상태는 매우 양호합니다.", "opts": {"A": "고객에게 가젯 사용 없이 세션에 집중해보라고 요청한다.", "B": "고객에게 대신 컴퓨터 화면에 집중하라고 제안한다.", "C": "고객의 설명을 인정하고 코칭 세션을 계속 진행한다.", "D": "고객에게 가젯 없이 세션을 진행해보도록 초대하여 그것이 정말 도움이 되는지 확인해보자고 제안한다."}},
+            {"s": "고객들은 훌륭히 진전하고 있으나 신임 코치 스스로 확신이 없고 완전한 현존과 편안함을 느끼지 못해 불안해합니다.", "opts": {"A": "몇몇 고객과의 관계에 더 철저히 집중할 수 있도록 업무량을 줄인다.", "B": "자신의 코칭 기술을 향상시키기 위해 개인적인 학습과 성장을 위한 루틴을 개발한다.", "C": "더 자신감을 느끼기 위해 자신의 코칭 성공과 성취 목록을 만든다.", "D": "코칭을 잠시 중단하고 자기 확신을 높여서 고객들과 더 자신감 있게 느낄 수 있도록 한다."}},
+            {"s": "팀 장애로 고민하는 관리자 고객이 코치의 과거 관리 경력을 알고 \"나라면 어떻게 하겠느냐\"며 조언을 구합니다.", "opts": {"A": "원래의 코칭 계약을 상기시키고 이러한 문제들이 초기 목표 범위를 벗어나므로 논의되어서는 안 된다고 말한다.", "B": "가능한 접근 방식들을 설명하기 전에 문제에 대한 더 많은 정보를 요청하고, 그런 다음 고객에게 그 아이디어들에 대해 어떻게 느끼는지 묻는다.", "C": "코칭과 컨설팅의 차이를 상기시키고, 고객이 이 특정 상황에 대한 전문가임을 설명하며, 그들의 초기 아이디어를 공유하도록 초대한다.", "D": "팀 기능 장애를 해결하기 위해 이미 고려한 아이디어들을 공유하도록 고객을 초대하고, 그런 다음 그 아이디어들의 장단점을 고려하게 한다."}},
+            {"s": "중년 경력전환 전문 코치가 엘리트 집안에서 대학을 중퇴하고 혼란과 부끄러움을 느끼는 22세 청년을 처음 만났습니다.", "opts": {"A": "이미 효과가 있었던 전략들을 활용하여 고객과 함께 작업을 계속한다.", "B": "고객이 수치심을 느낄 수 있음을 인정하지만, 코치가 중년 경력 변화를 전문으로 하기 때문에 도움을 줄 수 없다고 말하지 않는다.", "C": "고객에게 더 많은 정보를 제공하도록 초대하기 전에 잠시 멈추어 고객이 공유한 것을 반영한다.", "D": "대학 중퇴가 큰 결정이었다는 점을 인정하고, 결정을 내리는 방법에 대해 무엇을 배웠는지 고객에게 물어봅니다."}},
+            {"s": "과로하던 고객이 새로운 일을 맡는 것을 거절할 수 없다는 두려움을 설명하다가 눈물을 흘리기 시작합니다.", "opts": {"A": "고객이 말한 내용을 요약하여 상황을 완전히 이해하도록 합니다.", "B": "고객의 반응을 보면 이것이 고객에게 깊은 감정적 문제라는 것이 분명하다고 말합니다.", "C": "열심히 일하는 것을 고객이 중요하게 여기고, 열심히 일하는 것을 고용주가 중요하게 여긴다는 것이 분명하다는 생각을 공유합니다.", "D": "직장 상황을 설명할 때 두려움을 느끼는 이유를 고객에게 물어봅니다."}},
+            {"s": "200명 해고를 결정한 임원 고객이 극심한 불안을 호소하고 코치 역시 결정의 중요성과 파장 때문에 불안을 느낍니다.", "opts": {"A": "직원 해고라는 어려운 결정의 궁극적인 책임은 고객에게 있기 때문에 고객은 아마도 코치보다 더 불안을 느낄 것임을 생각해봅니다.", "B": "고객이 업무를 하는 맥락을 이해하기 위해 조직과 그 문제를 조사합니다.", "C": "고객에게 직원 해고와 관련되지 않은 대체 솔루션을 제시할 준비를 합니다.", "D": "코치가 고객의 상황에 처해 있다면 무엇을 듣고 싶어할지 생각함으로써 고객의 요청을 들어봅니다."}},
+            {"s": "세션 직전 고객이 코치의 가치관에 반하는 발언을 하여 코치 내면에 갑작스러운 강한 분노가 치밀어 오릅니다.", "opts": {"A": "고객의 좋은 자질에 대해 생각합니다.", "B": "코치가 느끼는 분노를 고객에게 이야기합니다.", "C": "감정을 조절하기 위해 심호흡을 합니다.", "D": "고객에게 집중하여 감정이 사라지도록 둡니다."}},
+            {"s": "가족 로펌을 떠나려는 고객이 3회 세션 연속 이력서 작성에 진전이 없고 \"일이 바빠서요\"라고만 짧게 답합니다.", "opts": {"A": "직장 생활의 무엇 때문에 이를 다시 겪고 싶지 않은지 고객에게 물어봅니다.", "B": "진전에 어려움을 겪고 있는 이유를 브레인스토밍하도록 고객에게 요청합니다.", "C": "전체 상황에 대해 어떻게 생각하고 느끼는지 살펴보도록 고객에게 요청합니다.", "D": "고객에게 자신의 커리어가 자신의 가치에 어떻게 부합할 수 있는지 알려달라고 요청합니다."}},
+            {"s": "행동을 꾸준히 실천하던 자기비판적 고객이 시간 낭비 같고 진전이 없다며 돌연 코칭 종료를 요구합니다.", "opts": {"A": "고객의 감정을 인정하고 자신에 대한 기대치를 충족하지 못했다고 생각했던 다른 경우들과 같은 느낌이 드는지 물어봅니다.", "B": "고객에게 삶의 전환 목표를 달성하는 데 얼마나 걸릴 것이라고 생각하는지 물어봅니다.", "C": "최근에 이러한 결정을 내리게 만든 일이 있었는지 이야기하도록 고객에게 요청합니다.", "D": "큰 진전을 확실히 이루었는데 왜 시간 낭비라고 생각하는지를 고객에게 물어봅니다."}},
+            {"s": "같은 회사의 두 이사가 리더십 개발에는 집중하지 않고 상대방이 코치와 무슨 이야기를 나누는지 캐묻는 데 집중합니다.", "opts": {"A": "세션은 리더십 기술을 개선하기 위한 것임을 고객에게 상기시킵니다.", "B": "고객에게 세션의 목적을 상기시키고 왜 그에 초점을 맞추지 않는지 고객에게 물어봅니다.", "C": "고객에게 세션의 목적을 상기시키고, 그 목적에 집중하는 데 방해가 되는 것이 있는지 고객에게 물어봅니다.", "D": "리더십 스킬 개발이라는 목표에 진정으로 전념하고 있는지 고객에게 물어봅니다."}},
+            {"s": "소프트웨어 임원이 고도의 기술 용어를 쓰며 목표를 말하자 코치는 지식 격차가 코칭을 방해할까 봐 불안해합니다.", "opts": {"A": "다음에 코치가 고객의 말을 더 잘 이해하게끔 코치가 학습할 수 있는 자료를 고객에게 요청합니다.", "B": "더 일반적인 용어로 말하도록 고객에게 요청하며, 코치와 고객이 동일한 기술 전문 지식을 공유하지 않는 경우가 많다는 점을 상기시킵니다.", "C": "고객이 사용하는 기술 언어를 이해하는 데 어려움이 있음을 고객에게 알리고 용어의 의미를 묻기 위해 말을 막을 때 고객에게 방해가 되는지 묻습니다.", "D": "코칭 세션이 계속 집중적일 수 있도록 고객이 더 일반적인 용어로 목표를 설명하기 시작하도록 제안합니다."}},
+            {"s": "전사 의무 코칭에 참여한 매니저가 \"모두가 정확히 같은 목표를 부여받아 코칭에 별 흥미가 없다\"며 수동적 태도를 보입니다.", "opts": {"A": "고객에게 자신을 위한 최적의 코칭 목표가 무엇이라고 생각하는지 물어봅니다.", "B": "목표 달성 및 벤치마크 완료를 위해 무엇을 할 계획인지 고객에게 묻습니다.", "C": "고객이 목표와 벤치마크에서 적시에 진전을 이루도록 독려합니다.", "D": "고객이 업무와 조직에 얼마나 헌신적인지 고객과 함께 살펴봅니다."}},
+            {"s": "성공한 교수 출신 신임 재무 매니저가 고위 간부들의 복잡한 정치 관계에 압도되어 주저하며 대담해지기를 원합니다.", "opts": {"A": "과거 커리어에서 배운 교훈이 새로운 커리어에 대한 어떠한 통찰을 제공할 수 있는지 고객과 함께 살펴봅니다.", "B": "고객이 새로운 환경이 이전 환경과 매우 다르다는 것을 받아들이도록 격려합니다.", "C": "새로운 조직에 합류하는 것은 흔히 새로 들어온 직원에게 어색하고 도전적이라는 점을 인정합니다.", "D": "이전 업무 환경에서 무엇이 마음에 들었는지 살펴보도록 고객에게 권장합니다."}},
+            {"s": "저성과자 피드백을 앞두고 관찰 기간 부족으로 불편해하는 신임 관리자에게 코치가 자신의 전문적 조언을 주고 싶어 합니다.", "opts": {"A": "직원 피드백을 제공하는 방법에 대한 조언을 고객에게 제공하는 것을 삼가(지양)합니다.", "B": "직원 피드백 제공 방법에 대한 전문가의 조언을 받도록 고객을 컨설턴트에게 추천합니다.", "C": "고객을 계속 코칭하고, 코칭 세션 후에 후속 이메일을 보내 이 이메일에 피드백 제공을 위한 모범 사례를 포함합니다.", "D": "피드백을 제공하기 위한 몇 가지 아이디어를 공유하고, 이러한 아이디어가 직원에게 어떻게 작용할 수 있는지 고객과 함께 살펴봅니다."}},
+            {"s": "고객이 중요한 발견과 깨달음의 통찰 순간에 도달하여 말을 멈추고 가만히 코치를 올려다보고 있습니다.", "opts": {"A": "침묵을 지키며 고객의 시선을 마주하여 고객이 그 순간을 온전히 경험할 수 있도록 합니다.", "B": "이 순간에 코치에게서 필요한 것이 무엇인지 고객에게 물어봅니다.", "C": "고객이 방금 말한 내용은 정말 중요해 보였기 때문에 그 내용에 대해 제대로 생각해 보라고 제안합니다.", "D": "필요한 경우 고객이 울 수 있도록 잠시 혼자 있는 것을 제안합니다."}},
+            {"s": "경영진과 합의한 '권위적 리더십 스타일 개발' 목표가 자신에게 진실되지 않고 맞지 않는다며 고객이 털어놓습니다.", "opts": {"A": "경영진에게 코칭 계약을 변경하고 싶다고 말하도록 고객에게 권장합니다.", "B": "고객이 리더로서의 비전을 개발하도록 돕게 끔 향후 세션의 중점을 조정합니다.", "C": "새로운 코칭 목표가 가능한지 결정하기 위해 코치가 조직 경영진과 만나야 할 것이라고 고객에게 말합니다.", "D": "코칭 목표와 자신의 욕구 사이의 불일치를 어떻게 처리하고 싶은지 고객에게 물어봅니다."}}
+        ];
 
-        // 94개 전체 문제 풀 생성 (결코 비어있지 않도록 보장)
-        const examPool = [];
-        for(let i = 1; i <= 94; i++) {
-            examPool.push({
+        // 정답 및 역량 매핑
+        const fullFormulationMaster = {
+            1: {b:"C", w:"D", bd:"고조된 감정을 존중하면서 즉각적 촉발 요인을 언어화하게 하여 스스로 관찰하게 함.", wd:"주관적 분노에 동조하여 중립성을 잃고 해결책을 조급히 브레인스토밍함."},
+            2: {b:"A", w:"B", bd:"관찰한 불편함 상태를 되돌려주어 진짜 걸림돌을 자각하게 함.", wd:"이미 스트레스인 상태에서 세부 설명을 더 요구해 압도감을 키움."},
+            3: {b:"A", w:"B", bd:"시간 현실을 투명하게 알리고 남은 시간 활용 결정권을 고객에게 넘김.", wd:"세션 실패를 코치가 단정해 사과하고 고객의 성과를 폄하함."},
+            4: {b:"B", w:"C", bd:"침묵을 깨지 않고 온전히 머물며 내면을 마주할 공간을 줌.", wd:"근거 없는 인과관계를 단정하여 취약한 돌봄의 무게를 생산성 수단으로 축소함."},
+            5: {b:"D", w:"A", bd:"판단 없이 말과 행동의 불일치 패턴만 제시하여 스스로 직면하게 함.", wd:"회의적인 유도 질문으로 목표 포기/연기를 암시함."},
+            6: {b:"D", w:"C", bd:"에너지 변화를 투명하게 공유하고 필요 충족 여부를 확인해 주도권을 돌림.", wd:"비언어적 신호를 무시하고 코치의 지식 제공(티칭)을 일방적으로 밀어붙임."},
+            7: {b:"D", w:"B", bd:"자신의 편향을 정직하게 직시하고 스스로 내적 관리를 수행해 관계를 지킴.", wd:"사적 험담을 세션에 끌어들여 고객을 해명/방어 위치에 몰아넣음."},
+            8: {b:"B", w:"A", bd:"변화된 상황에 맞춰 남은 계약 기간의 목표를 파트너십으로 재설계함.", wd:"이미 달성된 목표를 관성적으로 유지하며 방치함."},
+            9: {b:"A", w:"B", bd:"역할 혼재를 막기 위해 계약서와 세션 시간을 물리적·구조적으로 분리함.", wd:"역할을 뒤섞어 코칭을 컨설팅의 부속물로 전락시킴."},
+            10: {b:"A", w:"B", bd:"모호한 평가를 구체적인 기대사항과 단기 목표로 전환하도록 지원함.", wd:"코치가 '문화 저항'이라고 단정하고 책임을 고객 태도 탓으로 돌림."},
+            11: {b:"A", w:"D", bd:"고통을 수용하고 안전을 확보하여 감정 표현과 탐색의 주도권을 줌.", wd:"급성 고통 상태에서 감정을 우회하고 사실상 조직 스폰서를 대변함."},
+            12: {b:"C", w:"A", bd:"시간 현실을 알리고 3분의 시간을 어떻게 사용할지 결정권을 고객에게 넘김.", wd:"의미 있는 통찰을 시간 압박 속에 억지로 우겨넣게 하여 탐색을 차단함."},
+            13: {b:"D", w:"B", bd:"불편한 이유를 설명해 제3자 프라이버시 존중의 본보기를 보임.", wd:"기밀 유지를 위반하고 고객 직장 관계에 무단 개입해 위험에 빠뜨림."},
+            14: {b:"D", w:"C", bd:"이해 상충을 투명하게 공개하고 관계 지속 여부 결정권을 고객에게 둠.", wd:"통제 불가능한 구조적 이해 상충을 실효성 없는 계약 조항으로 봉합함."},
+            15: {b:"A", w:"D", bd:"지금까지 무엇을 배웠고 변화시켰는지 스스로 회상해 자기평가 역량을 회복하게 함.", wd:"코치의 견해를 일방 공유해 외부 승인 의존성을 심음."},
+            16: {b:"A", w:"D", bd:"코치의 감정을 수용한 뒤 주의를 고객에게 되돌려 경청을 회복함.", wd:"코치의 내적 불안을 고객의 과제로 넘겨 표현을 억압함."},
+            17: {b:"D", w:"C", bd:"깊은 호흡을 모델링하고 감정 탐색의 주도권을 고객에게 맡김.", wd:"정상적 감정 표출을 성급히 병리화해 전문가 의뢰로 밀어냄."},
+            18: {b:"C", w:"B", bd:"요청을 수용하면서 원래 상위 목표와의 연결성을 스스로 확인하게 함.", wd:"기밀 침해 소지가 있는 조언을 던져 고객을 수용자로 전락시킴."},
+            19: {b:"C", w:"D", bd:"결론을 재촉하지 않고 갈등 자체의 무게를 공감하며 안전한 공간을 엶.", wd:"미검증된 낙관적 전제로 특정 결정(사건 수락/잔류)을 유도함."},
+            20: {b:"C", w:"B", bd:"상사를 언급했을 때 일어난 행동 변화를 비춰주어 의미를 자각하게 함.", wd:"신호를 공유하지 않고 코치 혼자 머릿속으로 원인을 추론함."},
+            21: {b:"D", w:"B", bd:"일정 불안에 쫓기지 않고 침묵을 견디며 스스로 말할 시간을 줌.", wd:"고통스러운 현실을 부정하고 코치 불안을 달래려 성급한 확언을 던짐."},
+            22: {b:"C", w:"A", bd:"코칭 역할 경계를 명확히 하고 의사결정 주도권이 고객에게 있음을 확립함.", wd:"'내가 당신이라면' 형식으로 조언을 포장해 커리어 결정에 개입함."},
+            23: {b:"D", w:"A", bd:"결정권은 두고 결정을 내리기 위해 필요한 지원을 함께 탐색함.", wd:"고객의 취약성을 지적과 평가의 도구로 삼아 해명의 위치에 세움."},
+            24: {b:"A", w:"D", bd:"답을 스스로 찾도록 역량을 강화하는 본질을 긍정형으로 안내함.", wd:"묻지도 않은 가족 치료와의 비교로 화제를 돌려 오인하게 함."},
+            25: {b:"C", w:"A", bd:"본인이 세운 기준(가치관/열정)에 비추어 스스로 점검하게 함.", wd:"불안으로 인한 목표 후퇴를 무비판적으로 수용해 단순 실행 지원으로 전환함."},
+            26: {b:"D", w:"B", bd:"목표 중요성을 인정해 방어를 낮춘 뒤 숨은 진짜 두려움을 탐색함.", wd:"정답을 정해둔 잘못된 이분법적 선택을 강요해 방어를 강화함."},
+            27: {b:"B", w:"D", bd:"세션 동안 집중할 작은 부분을 식별하게 하여 통제감을 회복시킴.", wd:"이미 위축된 고객을 과거 실패와 결함 분석의 늪으로 밀어 넣음."},
+            28: {b:"C", w:"A", bd:"사적 노출을 피하며 질문의 초점을 고객의 코칭 목표로 되돌림.", wd:"코치의 사적 신념을 공개/비교하여 관계의 축을 변질시킴."},
+            29: {b:"C", w:"B", bd:"사적 감정을 관리하고 철저한 비밀유지 윤리를 준수함.", wd:"코치의 평판 보호를 위해 고객을 은폐의 공범으로 끌어들임."},
+            30: {b:"B", w:"D", bd:"과거 군 경험을 현재 직무의 강점이자 자산으로 통합하게 함.", wd:"고객 경험 대신 코치 머릿속의 일반화된 고정관념에 의존함."},
+            31: {b:"D", w:"C", bd:"고객의 경계를 존중하며 편안히 여기는 학습 방식을 지지함.", wd:"명시적으로 거부한 상처 영역을 무단 침범해 들쑤심."},
+            32: {b:"C", w:"D", bd:"종결 평가의 주체를 고객으로 두고 성취와 과제를 돌아보게 함.", wd:"미충족 기대를 근거로 결핍된 존재로 낙인찍고 타인에게 떠넘김."},
+            33: {b:"D", w:"B", bd:"세션 전 코치 자신의 감정을 먼저 다스려 평정심을 회복함.", wd:"당사자를 두고 외부 동료들에게 일반론적 위로를 구하며 회피함."},
+            34: {b:"C", w:"A", bd:"초점을 외부 환경 탓에서 고객 자신의 내면과 선택으로 전환함.", wd:"반박 증거를 수집하게 유도하여 '문제는 당신'이라는 결론에 빠뜨림."},
+            35: {b:"C", w:"B", bd:"세션 중에는 프레즌스를 유지하고 개인 불안은 슈퍼비전에서 해결함.", wd:"코칭 책임을 사실상 포기하고 방치해 종결 책임을 떠넘김."},
+            36: {b:"C", w:"B", bd:"세션 안 실시간 자각을 실제 현장의 행동 변화로 연결함.", wd:"결정적 성찰의 순간을 단순 칭찬으로 닫고 전이 기회를 소멸시킴."},
+            37: {b:"D", w:"A", bd:"코치의 분노를 개입시키지 않고 고객 주제(적응)에 머묾.", wd:"코치 감정을 쏟아붓고 고객의 현실 인식을 일방적으로 무효화함."},
+            38: {b:"C", w:"D", bd:"관찰 사실만 제시하고 패턴 확인을 고객 스스로에게 맡김.", wd:"독단적인 낙인('저항')을 질문으로 위장하여 강요함."},
+            39: {b:"B", w:"A", bd:"사실을 투명하게 짚고 의제 변경 여부의 주도권을 고객에게 줌.", wd:"감정적 현실을 무시하고 원래 의제 복귀를 강요함."},
+            40: {b:"A", w:"C", bd:"개입 실패를 인정하고 고객이 진정 필요로 했던 지원을 확인함.", wd:"코치의 잘못을 고객 태도 문제로 치환해 죄책감을 줌."},
+            41: {b:"B", w:"C", bd:"실행을 지탱할 책임 구조를 고객 스스로 설계하게 함.", wd:"시작도 못한 고객에게 과제 크기를 키워 부과하며 주도권을 뺏음."},
+            42: {b:"A", w:"D", bd:"진단 없이 관찰 사실과 코치의 우려만 정직히 공유함.", wd:"소통 없이 코치 독단으로 문제를 단정하고 일방 의뢰함."},
+            43: {b:"D", w:"B", bd:"요청 이면에 있는 자기 신뢰 이슈를 고객 스스로 보게 함.", wd:"맹목적으로 따라 지시적 컨설팅으로 역할을 바꿔 목표를 훼손함."},
+            44: {b:"B", w:"C", bd:"감지된 뉘앙스 차이만 거울로 비추고 속마음을 스스로 탐색하게 함.", wd:"미검증된 가설을 고객의 부정적 의도로 단정해 통보함."},
+            45: {b:"D", w:"C", bd:"고객 반문을 피드백으로 삼아 잘 작동하는 방식을 함께 설계함.", wd:"방식의 부적합성을 고객 비협조 문제로 치부해 훈계함."},
+            46: {b:"B", w:"A", bd:"외부 성취를 내면의 자기 인정 및 코칭 목표와 연결함.", wd:"외부 상을 근거로 코치가 목표 달성을 일방 판정함."},
+            47: {b:"D", w:"C", bd:"고객 스스로 많은 정보 속에서 본질을 선별하게 함.", wd:"정리되지 않은 이야기에 코치가 자의적 틀을 씌워 오도함."},
+            48: {b:"A", w:"B", bd:"의제 부재를 전체 코칭 합의 갱신의 계기로 삼음.", wd:"세션을 중단하고 코치의 당혹감을 고객 준비 부족 탓으로 돌림."},
+            49: {b:"A", w:"B", bd:"근본 감정인 두려움의 실체를 직면해 탐색함.", wd:"이미 실패한 기계적 계획 나열을 무의미하게 반복함."},
+            50: {b:"C", w:"A", bd:"놀람을 인정하되 사적 친분 없이 고객의 선택을 온전히 지지함.", wd:"사적 감정을 노출하고 이혼 결정을 코치가 '좋은 생각'이라 판정함."},
+            51: {b:"A", w:"C", bd:"현상을 정직히 전달하고 속도를 늦춰보는 실질적 경험을 제공함.", wd:"미검증 추측을 상사에게 투사해 위축시키고 성급히 교정을 요구함."},
+            52: {b:"B", w:"C", bd:"들은 말과 관찰된 신체 긴장 신호를 병치해 비춤.", wd:"관찰을 진위 판정으로 비화해 고객 진술을 '거짓'으로 묾."},
+            53: {b:"B", w:"A", bd:"과제 미이행 이면의 정서적 낙담을 깊이 탐색함.", wd:"고객이 느끼는 실패감과 낙담을 가볍게 치워버림."},
+            54: {b:"D", w:"A", bd:"화제 전환 요청을 존중하며 안전한 침묵의 공간을 제공함.", wd:"사양한 질문을 되풀이하여 경계를 침범하고 방어를 유발함."},
+            55: {b:"D", w:"B", bd:"어떤 판단도 없이 취약성 공유 자체를 안전하게 수용함.", wd:"'과하게 받아들였다'고 판단하고 조기 학습을 강요함."},
+            56: {b:"C", w:"A", bd:"원인을 무리한 '합의 구조'로 돌리고 재협상 필요성을 확인.", wd:"계약 유지 욕심 때문에 발생한 부담을 고객에게 전가해 압박함."},
+            57: {b:"A", w:"D", bd:"날 선 표현에 맞서지 않고 오랜 고통을 꺼낸 사실 자체만 수용함.", wd:"고통 속에 우는 고객의 호소를 논리적으로 반박해 주관적 현실을 부정함."},
+            58: {b:"A", w:"D", bd:"반복 서사를 멈추고 '지금 여기'의 신체 감각으로 안정을 찾게 함.", wd:"초점을 코치 자신으로 돌리고 극복담으로 무력감을 안김."},
+            59: {b:"D", w:"B", bd:"요약으로 인지 부하를 줄이되 우선순위 선택권은 온전히 고객에게 줌.", wd:"시간 부족을 핑계로 세션 목표를 코치가 독단 선점함."},
+            60: {b:"D", w:"B", bd:"전문적 한계를 밝히며 의료 전문가와의 논의 여부를 점검함.", wd:"비전문가 코치가 얕은 지식으로 임상 영역을 다루려 함."},
+            61: {b:"C", w:"A", bd:"동기 변화를 비춰주고 목표를 재고할지 고객 스스로 결정하게 함.", wd:"동기 어긋남을 점검하지 않고 기계적 운동만 강요함."},
+            62: {b:"B", w:"C", bd:"벌어진 갈등을 생생한 학습 자료로 전환해 통찰을 얻게 함.", wd:"세션 밖 제3자의 감정을 코치가 치료하려 듦."},
+            63: {b:"D", w:"B", bd:"은유적 질문으로 형식적 동의 이면의 주저함을 탐색함.", wd:"명백한 불일치 신호를 외면해 실패 패턴을 방치함."},
+            64: {b:"B", w:"C", bd:"역전이 반응을 전문적 슈퍼비전 공간에서 안전하게 처리함.", wd:"코치의 감정적 한계를 고객 탓으로 돌려 관계를 종결함."},
+            65: {b:"A", w:"B", bd:"신체적 위험 신호에 대해 즉각적인 의료 진단을 권유함.", wd:"비밀유지를 위반하고 상사에게 건강 정보를 무단 유출함."},
+            66: {b:"A", w:"B", bd:"계약서상의 자율적 권리를 온전히 존중해 종료를 수용함.", wd:"결정을 불신하고 유예를 요구하며 불필요한 세션을 강요함."},
+            67: {b:"D", w:"C", bd:"성취를 이끈 내면의 자원과 동력을 스스로 발견하게 함.", wd:"작은 성취를 근거로 성급히 기존 목표 종결을 암시함."},
+            68: {b:"D", w:"C", bd:"윤리적 비밀유지 기준과 진행 보고 방식을 공식 재정립함.", wd:"스폰서와의 갈등을 고객 세션으로 끌고 가 안전을 위협함."},
+            69: {b:"C", w:"B", bd:"솔직한 감정을 수용하고 비자발적 상황 자체를 탐색함.", wd:"솔직한 표현을 '자격 미달'로 낙인찍고 내쫓음."},
+            70: {b:"D", w:"B", bd:"분석을 내려놓고 감정과 신체 감각을 통한 새 통찰을 열어줌.", wd:"고객의 중대한 커리어 결정을 코치가 대신 내려버림."},
+            71: {b:"A", w:"D", bd:"악의 없는 습관임을 직시하고 코치의 내적 반응을 다스림.", wd:"사업적 욕심 때문에 감정을 억압하고 방치함."},
+            72: {b:"D", w:"A", bd:"상태를 수용하고 통제감을 회복할 최소 단위를 찾게 함.", wd:"생생한 불안을 '괜한 걱정' 취급하며 대화를 차단함."},
+            73: {b:"A", w:"D", bd:"명확한 새로운 목적과 합의를 고객 주도로 수립함.", wd:"목표 달성을 이유로 고객의 새로운 필요를 일방 거절함."},
+            74: {b:"D", w:"C", bd:"상상력을 활용해 자연스럽게 구체적 실행 장면으로 전환시킴.", wd:"고유 표현 양식을 결함으로 규정해 지시적으로 교정하려 듦."},
+            75: {b:"C", w:"A", bd:"타협 없이 투명성을 지키고 부당 조건 시 계약을 종료함.", wd:"특권적 정보를 무단 발설해 조직 인사 권한을 침범함."},
+            76: {b:"B", w:"A", bd:"이해한 바를 투명하게 확인하고 되물으며 존중함.", wd:"알아듣지 못했으면서 이해한 척 제스처로 속여 소통을 단절시킴."},
+            77: {b:"C", w:"B", bd:"'상호 파트너십' 기준을 비난 없이 환기해 점검하게 함.", wd:"코칭을 포기하고 단순 감정 쓰레기통 역할을 묵인함."},
+            78: {b:"A", w:"B", bd:"거부를 수용하며 실제 업무 행동 사례로 대화를 이어감.", wd:"대화를 중단하고 일방적인 읽을거리 자료를 투척함."},
+            79: {b:"C", w:"A", bd:"고유 집중 방식을 존중하고 본래 주제로 복귀함.", wd:"도움이 된다는 설명을 불신하고 시선 집중을 강요함."},
+            80: {b:"B", w:"D", bd:"내적 불안을 세션 밖 지속적 학습과 슈퍼비전으로 다룸.", wd:"코치 사적 불안 때문에 고객 세션을 중단해 피해를 줌."},
+            81: {b:"C", w:"B", bd:"역할 경계를 짚어주며 관리자로서의 판단을 꺼내게 함.", wd:"조언을 주려고 사전 정보를 수집하며 은밀히 역할을 전환함."},
+            82: {b:"C", w:"A", bd:"섣부른 조언을 멈추고 낯선 배경의 이야기를 충분히 경청함.", wd:"중년층에게 썼던 성공 전략을 청년에게 기계적으로 적용함."},
+            83: {b:"D", w:"C", bd:"눈물 속 '두려움'의 실체를 깊이 있게 탐색함.", wd:"두려움을 '근면'으로 미화해 과로 구조를 합리화함."},
+            84: {b:"A", w:"C", bd:"결정 책임이 고객에게 있음을 자각해 코치 불안을 내려놓음.", wd:"중대한 경영 결정을 비전문가 코치가 번복하려 월권함."},
+            85: {b:"D", w:"B", bd:"주의를 고객에게 집중해 분노를 자연스럽게 흘려보냄.", wd:"사적 분노를 세션에 쏟아부어 고객을 해명 위치에 몰아넣음."},
+            86: {b:"C", w:"A", bd:"좁은 과제 독촉에서 벗어나 전환 전체에 대한 내면을 조망함.", wd:"선입견을 전제로 깔아 답을 유도함."},
+            87: {b:"A", w:"D", bd:"자기비판적 평가 패턴이 작동한 것인지 스스로 대조하게 함.", wd:"코치 판단을 강요하며 주관적 감정을 부정하고 논쟁을 유발함."},
+            88: {b:"C", w:"B", bd:"목적을 환기한 뒤 몰입 방해 요인(불신/정치)을 털어놓게 함.", wd:"고객 진정성을 의심하고 힐난해 방어를 극대화함."},
+            89: {b:"C", w:"B", bd:"한계를 인정하고 고객의 몰입 방해 여부를 점검함.", wd:"코치 이해 부족을 이유로 일상적 언어로 번역을 요구해 억압함."},
+            90: {b:"A", w:"D", bd:"획일적 벤치마크 속에서 고객 본인에게 의미 있는 목표 주도권을 줌.", wd:"흥미 부족을 '조직 불충/헌신 부족'으로 몰아가며 취조함."},
+            91: {b:"A", w:"B", bd:"과거 성공 역량을 새 환경에 연결해 자기효능감을 회복시킴.", wd:"이전 경력과 현재가 단절되었다고 단정해 체념을 강요함."},
+            92: {b:"A", w:"C", bd:"코치의 조언을 철저히 절제하고 고객 스스로 판단을 찾게 함.", wd:"세션 밖에서 조언 이메일을 보내 계약 경계를 기만함."},
+            93: {b:"A", w:"D", bd:"말을 보태지 않고 따뜻한 현존으로 통찰 공간을 보장함.", wd:"지레짐작으로 결정적 통찰 순간에 자리를 피해 방치함."},
+            94: {b:"D", w:"B", bd:"불일치를 제시하고 향후 방향을 고객이 주도적으로 선택하게 함.", wd:"스폰서와의 합의를 무시하고 코치가 고객과 멋대로 변경함."}
+        };
+
+        // 데이터베이스 통합 구축
+        const fullDatabase = [];
+        for (let i = 1; i <= 94; i++) {
+            const raw = rawExamQuestions[i];
+            const meta = fullFormulationMaster[i];
+            fullDatabase.push({
                 origId: i,
-                s: `[Case ${i}] 고객이 코칭 세션에서 직면한 핵심 도전 과제와 ICF 핵심 역량 적용 상황입니다. 본 상황에서 코치의 가장 효과적인 파트너십 행동을 선택하세요.`,
-                opts: [
-                    "고객의 감정을 수용하기보다 즉각적인 행동 지침을 제시한다.",
-                    "고객 스스로 내면의 가치와 장애물을 탐색하도록 개방형 질문을 구사한다.",
-                    "코치의 전문 지식을 활용해 올바른 방향을 강하게 코칭한다.",
-                    "고객의 고민에 동조하며 대화를 가볍게 마무리한다."
-                ]
+                s: raw.s,
+                best: meta.b,
+                worst: meta.w,
+                bestDesc: meta.bd,
+                worstDesc: meta.wd,
+                options: raw.opts
             });
         }
 
-        async function startExam() {
-            const token = document.getElementById("tokenInput").value.trim();
-            const name = document.getElementById("nameInput").value.trim();
-            const org = document.getElementById("orgInput").value.trim();
-            const phone = document.getElementById("phoneInput").value.trim();
-            const email = document.getElementById("emailInput").value.trim();
+        // 상태 변수
+        let currentMode = 'learn'; // 'learn' | 'review' | 'exam'
+        let activeDataset = [...fullDatabase];
+        let currentIndex = 0;
+        let examAnswers = {}; 
 
-            if(!token || !name || !org || !phone || !email) {
-                alert("모든 인적사항과 수험번호를 입력해주세요.");
-                return;
+        function checkAuth() {
+            const input = document.getElementById('authPasswordInput').value.trim();
+            const errEl = document.getElementById('authError');
+            if (input === ACCESS_PASSWORD) {
+                document.getElementById('authOverlay').style.display = 'none';
+                initLearnMode();
+            } else {
+                errEl.textContent = '❌ 비밀번호가 올바르지 않습니다.';
+                document.getElementById('authPasswordInput').focus();
+            }
+        }
+
+        function initLearnMode() {
+            currentMode = 'learn';
+            activeDataset = [...fullDatabase];
+            currentIndex = 0;
+            updateModeUI();
+            populateSelector();
+            renderCard(currentIndex);
+        }
+
+        function updateModeUI() {
+            const modeBadge = document.getElementById('modeBadge');
+            const headerTitle = document.getElementById('headerTitle');
+            const headerSub = document.getElementById('headerSub');
+            const flagBox = document.getElementById('examFlagBox');
+
+            if (currentMode === 'learn') {
+                modeBadge.textContent = '1단계: 전체 사례 학습 모드';
+                modeBadge.style.background = '#e0e7ff';
+                modeBadge.style.color = '#4338ca';
+                headerTitle.textContent = 'ICF CKA Case Formulation 94 학습 모드 📖';
+                headerSub.textContent = '사례별 50% 상황요약 & 정밀 역량 매핑';
+                flagBox.style.display = 'none';
+            } else if (currentMode === 'review') {
+                modeBadge.textContent = '2단계: 전체 문항 복습 모드';
+                modeBadge.style.background = '#fef3c7';
+                modeBadge.style.color = '#b45309';
+                headerTitle.textContent = 'ICF CKA Case 94 복습 모드 🔄';
+                headerSub.textContent = '핵심 개념 및 Best/Worst 근거 재확인';
+                flagBox.style.display = 'none';
+            } else if (currentMode === 'exam') {
+                modeBadge.textContent = '3단계: 실전 모의고사 (랜덤 셔플)';
+                modeBadge.style.background = '#dcfce7';
+                modeBadge.style.color = '#15803d';
+                headerTitle.textContent = 'ICF CKA 94 실전 모의고사 🎲';
+                headerSub.textContent = '사례 랜덤 출제 | Best 1개 & Worst 1개 선택 | 찍은 문제 표기';
+                flagBox.style.display = 'block';
+            }
+        }
+
+        function populateSelector() {
+            const sel = document.getElementById('caseSelector');
+            sel.innerHTML = '';
+            activeDataset.forEach((item, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.textContent = currentMode === 'exam' ? `Q${idx + 1} (사례 ${item.origId})` : `Case ${item.origId}`;
+                sel.appendChild(opt);
+            });
+        }
+
+        function renderCard(index) {
+            const data = activeDataset[index];
+            const origNum = data.origId;
+
+            document.getElementById('casePill').textContent = currentMode === 'exam' ? `Q${index + 1} (Case ${origNum})` : `CASE ${String(origNum).padStart(2, '0')}`;
+            document.getElementById('caseCountBadge').textContent = `${index + 1} / ${activeDataset.length}`;
+            document.getElementById('caseSelector').value = index;
+            document.getElementById('situationText').textContent = data.s;
+
+            const optionsContainer = document.getElementById('optionsContainer');
+            let optsHtml = '';
+
+            const userAns = examAnswers[index] || {};
+
+            for (const [key, text] of Object.entries(data.options)) {
+                if (currentMode === 'learn' || currentMode === 'review') {
+                    const isBest = (key === data.best);
+                    const isWorst = (key === data.worst);
+
+                    let cardClass = 'option-item';
+                    let evalBadge = '';
+                    let descBox = '';
+
+                    if (isBest) {
+                        cardClass += ' best-opt';
+                        evalBadge = `<span class="eval-tag eval-best">✓ BEST ACTION</span>`;
+                        descBox = `<div class="eval-desc"><b>💡 베스트 근거:</b> ${data.bestDesc}</div>`;
+                    } else if (isWorst) {
+                        cardClass += ' worst-opt';
+                        evalBadge = `<span class="eval-tag eval-worst">✗ WORST ACTION</span>`;
+                        descBox = `<div class="eval-desc"><b>⚠️ 워스트 오류:</b> ${data.worstDesc}</div>`;
+                    }
+
+                    optsHtml += `
+                        <div class="${cardClass}">
+                            <div>
+                                <span class="opt-label-badge">${key}</span>
+                                <span>${text}</span>
+                                ${evalBadge}
+                            </div>
+                            ${descBox}
+                        </div>
+                    `;
+                } else if (currentMode === 'exam') {
+                    const isPickedBest = (userAns.best === key);
+                    const isPickedWorst = (userAns.worst === key);
+
+                    let cardClass = 'option-item';
+                    if (isPickedBest) cardClass += ' best-opt';
+                    if (isPickedWorst) cardClass += ' worst-opt';
+
+                    optsHtml += `
+                        <div class="${cardClass}">
+                            <div>
+                                <span class="opt-label-badge">${key}</span>
+                                <span>${text}</span>
+                            </div>
+                            <div class="exam-actions">
+                                <button type="button" class="action-pick-btn ${isPickedBest ? 'selected-best' : ''}" onclick="pickExamAction(${index}, '${key}', 'best')">
+                                    ${isPickedBest ? '✓ 최선(Best) 선택됨' : '최선의 행동 (Best)'}
+                                </button>
+                                <button type="button" class="action-pick-btn ${isPickedWorst ? 'selected-worst' : ''}" onclick="pickExamAction(${index}, '${key}', 'worst')">
+                                    ${isPickedWorst ? '✓ 최악(Worst) 선택됨' : '최악의 행동 (Worst)'}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            optionsContainer.innerHTML = optsHtml;
+
+            if (currentMode === 'exam') {
+                const isFlagged = !!userAns.flagged;
+                document.getElementById('flagCheck').checked = isFlagged;
+                const wrap = document.getElementById('flagOptionsWrap');
+                if (isFlagged) wrap.classList.add('show');
+                else wrap.classList.remove('show');
+
+                document.getElementById('flagBestCheck').checked = !!userAns.flagBest;
+                document.getElementById('flagWorstCheck').checked = !!userAns.flagWorst;
             }
 
-            try {
-                const res = await fetch(GOOGLE_SCRIPT_URL, {
-                    method: "POST",
-                    body: JSON.stringify({ action: "VERIFY", token: token })
-                });
-                const data = await res.json();
-                if(!data.success) {
-                    alert(data.msg);
-                    return;
+            document.getElementById('prevBtn').disabled = index === 0;
+
+            const nextBtn = document.getElementById('nextBtn');
+            if (index === activeDataset.length - 1) {
+                if (currentMode === 'learn') {
+                    nextBtn.textContent = '🎉 학습 완료하기';
+                    nextBtn.className = 'nav-btn finish';
+                } else if (currentMode === 'review') {
+                    nextBtn.textContent = '🏆 복습 완료하기';
+                    nextBtn.className = 'nav-btn finish';
+                } else if (currentMode === 'exam') {
+                    nextBtn.textContent = '🏁 모의고사 최종 제출 및 채점';
+                    nextBtn.className = 'nav-btn finish';
+                }
+            } else {
+                nextBtn.textContent = '다음 (→) ➡️';
+                nextBtn.className = 'nav-btn next';
+            }
+
+            document.getElementById('cardContent').scrollTop = 0;
+        }
+
+        function changeCase(step) {
+            const nextIdx = currentIndex + step;
+            if (nextIdx >= 0 && nextIdx < activeDataset.length) {
+                currentIndex = nextIdx;
+                renderCard(currentIndex);
+            }
+        }
+
+        function jumpToCase(idx) {
+            currentIndex = parseInt(idx);
+            renderCard(currentIndex);
+        }
+
+        function handleNextClick() {
+            if (currentIndex === activeDataset.length - 1) {
+                if (currentMode === 'learn') {
+                    openModal('learnCompleteModal');
+                } else if (currentMode === 'review') {
+                    openModal('reviewDoneChoiceModal');
+                } else if (currentMode === 'exam') {
+                    submitExam();
+                }
+            } else {
+                changeCase(1);
+            }
+        }
+
+        function startReviewMode() {
+            closeModal('learnCompleteModal');
+            currentMode = 'review';
+            activeDataset = [...fullDatabase]; 
+            currentIndex = 0;
+            updateModeUI();
+            populateSelector();
+            renderCard(currentIndex);
+        }
+
+        function restartReview() {
+            closeModal('reviewDoneChoiceModal');
+            closeModal('examResultModal');
+            startReviewMode();
+        }
+
+        function startExamMode() {
+            closeModal('reviewDoneChoiceModal');
+            closeModal('examResultModal');
+            currentMode = 'exam';
+            examAnswers = {};
+
+            const shuffled = [...fullDatabase];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            activeDataset = shuffled;
+            currentIndex = 0;
+
+            updateModeUI();
+            populateSelector();
+            renderCard(currentIndex);
+            alert('🎯 모의고사가 시작되었습니다! 94개 상황이 무작위 순서로 출제됩니다.\n각 문항의 Best와 Worst를 선택하고, 헷갈리는 문항은 찍은 문제로 표기하세요.');
+        }
+
+        function pickExamAction(index, key, type) {
+            if (!examAnswers[index]) examAnswers[index] = {};
+
+            if (type === 'best') {
+                if (examAnswers[index].best === key) delete examAnswers[index].best;
+                else {
+                    examAnswers[index].best = key;
+                    if (examAnswers[index].worst === key) delete examAnswers[index].worst;
+                }
+            } else if (type === 'worst') {
+                if (examAnswers[index].worst === key) delete examAnswers[index].worst;
+                else {
+                    examAnswers[index].worst = key;
+                    if (examAnswers[index].best === key) delete examAnswers[index].best;
+                }
+            }
+            renderCard(index);
+        }
+
+        function toggleFlag(isChecked) {
+            if (!examAnswers[currentIndex]) examAnswers[currentIndex] = {};
+            examAnswers[currentIndex].flagged = isChecked;
+            const wrap = document.getElementById('flagOptionsWrap');
+            if (isChecked) wrap.classList.add('show');
+            else wrap.classList.remove('show');
+        }
+
+        function updateFlagOption(field, isChecked) {
+            if (!examAnswers[currentIndex]) examAnswers[currentIndex] = {};
+            examAnswers[currentIndex][field] = isChecked;
+        }
+
+        let examResultsLog = [];
+
+        function submitExam() {
+            let totalScore = 0;
+            const TOTAL_POINTS = 600;
+            const PASS_SCORE = 460;
+            const TOTAL_SUB_QUESTIONS = 94 * 2; 
+            const SCORE_PER_SUB = TOTAL_POINTS / TOTAL_SUB_QUESTIONS; 
+
+            examResultsLog = [];
+            let tbodyHtml = '';
+
+            for (let i = 0; i < activeDataset.length; i++) {
+                const item = activeDataset[i];
+                const ans = examAnswers[i] || {};
+
+                const userBest = ans.best || '-';
+                const userWorst = ans.worst || '-';
+                const corrBest = item.best;
+                const corrWorst = item.worst;
+
+                const isFlagged = !!ans.flagged;
+                let flagDetail = '-';
+                if (isFlagged) {
+                    const fb = ans.flagBest ? 'Best' : '';
+                    const fw = ans.flagWorst ? 'Worst' : '';
+                    flagDetail = `📝 찍음(${[fb, fw].filter(Boolean).join(',') || '전체'})`;
                 }
 
-                currentToken = token;
-                currentName = name;
-                currentOrg = org;
-                currentPhone = phone;
-                currentEmail = email;
+                let bestEarned = false;
+                let worstEarned = false;
 
-                document.getElementById("loginWrapper").classList.add("hidden");
-                document.getElementById("examWrapper").classList.remove("hidden");
+                if (!isFlagged) {
+                    if (userBest === corrBest) bestEarned = true;
+                    if (userWorst === corrWorst) worstEarned = true;
+                }
 
-                initWebcam();
-                startTimer();
-                renderQuestion();
+                let earnedPoints = 0;
+                if (bestEarned) earnedPoints += SCORE_PER_SUB;
+                if (worstEarned) earnedPoints += SCORE_PER_SUB;
+                totalScore += earnedPoints;
 
-            } catch (err) {
-                alert("서버 연결에 실패했습니다. 인터넷 연결이나 배포 URL을 확인하세요.");
-            }
-        }
+                let judgeText = '';
+                let rowClass = '';
 
-        function initWebcam() {
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(stream => { document.getElementById("webcam").srcObject = stream; })
-                .catch(e => { console.log("웹캠 접근 거부됨"); });
-        }
+                if (isFlagged) {
+                    judgeText = '<span style="color:#d97706; font-weight:bold;">⚠️ 찍은 문제(강제 오답)</span>';
+                    rowClass = 'row-forced-wrong';
+                } else if (bestEarned && worstEarned) {
+                    judgeText = '<span style="color:#059669; font-weight:bold;">✅ 완벽 정답 (2개 일치)</span>';
+                } else if (bestEarned || worstEarned) {
+                    judgeText = '<span style="color:#b45309; font-weight:bold;">⚡ 부분 정답 (1개 일치)</span>';
+                    rowClass = 'row-wrong';
+                } else {
+                    judgeText = '<span style="color:#dc2626; font-weight:bold;">❌ 전체 오답</span>';
+                    rowClass = 'row-wrong';
+                }
 
-        // 둔감화된 감시 시스템 (경고만 띄우고 시험 유지)
-        document.addEventListener("visibilitychange", () => {
-            if (document.hidden && !document.getElementById("examWrapper").classList.contains("hidden")) {
-                warningCount++;
-                document.getElementById("warningBadge").innerText = `경고 ${warningCount}회`;
-                alert(`⚠️ [부정행위 방지 경고]\n화면 이탈 또는 창 최소화가 감지되었습니다. (누적 경고: ${warningCount}회)`);
-            }
-        });
-
-        function startTimer() {
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                let m = Math.floor(timeLeft / 60);
-                let s = timeLeft % 60;
-                document.getElementById("timer").innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-                if(timeLeft <= 0) { clearInterval(timerInterval); submitExam(true); }
-            }, 1000);
-        }
-
-        function renderQuestion() {
-            const q = examPool[currentIndex];
-            document.getElementById("qNumBadge").innerText = `Q${currentIndex + 1} / 94 (Case ${q.origId})`;
-            document.getElementById("qText").innerText = q.s;
-            
-            // 이미지 경로 명시적 매핑
-            document.getElementById("qImg").src = `CKA 사례 그림/그림${q.origId}.png`;
-
-            let optHtml = "";
-            q.opts.forEach((optText, idx) => {
-                let currentAns = userAnswers[currentIndex] || { best: null, worst: null };
-                let bestChecked = currentAns.best === idx ? "checked" : "";
-                let worstChecked = currentAns.worst === idx ? "checked" : "";
-
-                optHtml += `
-                    <div style="background:#0f172a; padding:12px; border-radius:6px; margin-bottom:8px; border:1px solid #334155;">
-                        <div style="margin-bottom:8px; font-size:14px;">(${String.fromCharCode(65 + idx)}) ${optText}</div>
-                        <div>
-                            <label style="margin-right:15px; color:#4ade80; cursor:pointer;"><input type="radio" name="best_${currentIndex}" value="${idx}" ${bestChecked} onclick="setAnswer(${currentIndex}, 'best', ${idx})"> 최선의 행동 (Best)</label>
-                            <label style="color:#f87171; cursor:pointer;"><input type="radio" name="worst_${currentIndex}" value="${idx}" ${worstChecked} onclick="setAnswer(${currentIndex}, 'worst', ${idx})"> 최악의 행동 (Worst)</label>
-                        </div>
-                    </div>
+                tbodyHtml += `
+                    <tr class="${rowClass}">
+                        <td><b>Q${i + 1}</b></td>
+                        <td>사례 ${item.origId}</td>
+                        <td>B: ${userBest} / W: ${userWorst}</td>
+                        <td>B: ${corrBest} / W: ${corrWorst}</td>
+                        <td>${flagDetail}</td>
+                        <td>${judgeText}</td>
+                        <td>${Math.round(earnedPoints * 10) / 10}점</td>
+                    </tr>
                 `;
-            });
-            document.getElementById("optionsContainer").innerHTML = optHtml;
-            document.getElementById("progressText").innerText = `${currentIndex + 1} / 94`;
-            document.getElementById("flagCheck").checked = !!flaggedQuestions[currentIndex];
+
+                examResultsLog.push({
+                    qNum: i + 1,
+                    item: item,
+                    userBest,
+                    userWorst,
+                    corrBest,
+                    corrWorst,
+                    isFlagged,
+                    flagDetail,
+                    isFullCorrect: bestEarned && worstEarned,
+                    earnedPoints
+                });
+            }
+
+            const finalScoreRound = Math.round(totalScore);
+            const isPass = finalScoreRound >= PASS_SCORE;
+
+            document.getElementById('finalScoreText').textContent = `${finalScoreRound} / ${TOTAL_POINTS}점`;
+            const statusEl = document.getElementById('passStatusText');
+            const boxEl = document.getElementById('scoreBoxWrap');
+
+            if (isPass) {
+                statusEl.textContent = `🎉 합격입니다! (기준: ${PASS_SCORE}점 이상)`;
+                statusEl.style.color = '#059669';
+                boxEl.className = 'score-box pass';
+                document.getElementById('finalScoreText').className = 'score-val pass';
+            } else {
+                statusEl.textContent = `❌ 불합격입니다. (기준: ${PASS_SCORE}점 이상)`;
+                statusEl.style.color = '#dc2626';
+                boxEl.className = 'score-box fail';
+                document.getElementById('finalScoreText').className = 'score-val fail';
+            }
+
+            document.getElementById('examResultTbody').innerHTML = tbodyHtml;
+            openModal('examResultModal');
         }
 
-        function setAnswer(qIdx, type, optIdx) {
-            if(!userAnswers[qIdx]) userAnswers[qIdx] = { best: null, worst: null };
-            userAnswers[qIdx][type] = optIdx;
+        function openWrongNotesView() {
+            const container = document.getElementById('wrongNoteContainer');
+            let html = '';
+
+            const wrongItems = examResultsLog.filter(x => !x.isFullCorrect || x.isFlagged);
+
+            if (wrongItems.length === 0) {
+                html = '<p style="color:#059669; font-weight:bold; text-align:center; padding:30px;">축하합니다! 오답이나 찍은 문제가 하나도 없습니다! 💯</p>';
+            } else {
+                wrongItems.forEach(w => {
+                    const it = w.item;
+                    let optsText = '';
+                    for (const [k, v] of Object.entries(it.options)) {
+                        let tag = '';
+                        if (k === it.best) tag = ' <b style="color:#059669;">[✓ 정답 Best]</b>';
+                        if (k === it.worst) tag = ' <b style="color:#dc2626;">[✓ 정답 Worst]</b>';
+                        if (k === w.userBest) tag += ' <span style="color:#4338ca;">(내선택: Best)</span>';
+                        if (k === w.userWorst) tag += ' <span style="color:#e11d48;">(내선택: Worst)</span>';
+                        optsText += `<div style="margin:4px 0; font-size:0.86em;"><b>(${k})</b> ${v}${tag}</div>`;
+                    }
+
+                    html += `
+                        <div class="wrong-review-card">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-weight:bold; font-size:0.92em; border-bottom:1px solid #f1f5f9; padding-bottom:4px;">
+                                <span style="color:#b91c1c;">Q${w.qNum}. [원래 Case ${it.origId}] ${w.isFlagged ? '(찍은 문제로 강제 오답)' : '오답 문항'}</span>
+                                <span style="color:#4338ca; font-size:0.85em;">정답: Best[${w.corrBest}] / Worst[${w.corrWorst}] | 내선택: Best[${w.userBest}] / Worst[${w.userWorst}]</span>
+                            </div>
+                            <div style="font-size:0.88em; color:#334155; margin-bottom:8px; line-height:1.55;">
+                                <b>📌 상황:</b> ${it.s}
+                            </div>
+                            <div style="background:#f8fafc; padding:8px 12px; border-radius:6px; margin-bottom:8px;">
+                                ${optsText}
+                            </div>
+                            <div style="font-size:0.83em; line-height:1.5;">
+                                <div style="color:#065f46; margin-bottom:3px;"><b>💡 Best 근거:</b> ${it.bestDesc}</div>
+                                <div style="color:#991b1b;"><b>⚠️ Worst 오류:</b> ${it.worstDesc}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            container.innerHTML = html;
+            openModal('wrongNoteModal');
         }
 
-        function toggleFlag() {
-            flaggedQuestions[currentIndex] = document.getElementById("flagCheck").checked;
-        }
+        function openModal(id) { document.getElementById(id).classList.add('show'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
-        function moveQuestion(direction) {
-            currentIndex += direction;
-            if(currentIndex < 0) currentIndex = 0;
-            if(currentIndex >= examPool.length) currentIndex = examPool.length - 1;
-            renderQuestion();
-        }
-
-        function submitExam(isAuto = false) {
-            if(!isAuto && !confirm("정말 최종 제출하시겠습니까?")) return;
-            alert("시험이 제출되었습니다.");
-        }
+        window.addEventListener('keydown', (e) => {
+            if (document.getElementById('authOverlay').style.display !== 'none') return;
+            if (document.querySelector('.modal-overlay.show')) return;
+            if (e.key === 'ArrowLeft') changeCase(-1);
+            if (e.key === 'ArrowRight') handleNextClick();
+        });
     </script>
 </body>
 </html>
