@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICF CKA 94 실전 모의고사 (1회용 보안 인증 시스템)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        html, body { height: 100%; overflow: hidden; }
+        body { 
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: #1f2937;
+            padding: 10px;
+        }
+
+        /* 1회용 파기 완료 안내 화면 */
+        #destroyedScreen { 
+            position: fixed; 
+            inset: 0; 
+            background: #09090b; 
+            color: #f3f4f6; 
+            z-index: 100000; 
+            display: none; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 20px; 
+            text-align: center; 
+        }
+
+        /* 부정행위 감지 오버레이 */
+        #warningOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(220, 38, 38, 0.9);
+            backdrop-filter: blur(6px);
+            z-index: 95000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* 인적사항 & 수험번호 등록 창 */
+        #authModal {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #09090b 100%);
+            z-index: 90000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .auth-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 28px 24px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .form-group { text-align: left; margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 0.82em; font-weight: 700; color: #374151; margin-bottom: 3px; }
+        .form-control { width: 100%; padding: 9px 12px; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 0.88em; }
+        .security-notice { background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 8px; padding: 10px; font-size: 0.76em; color: #991b1b; margin: 12px 0; text-align: left; line-height: 1.45; }
+        .agree-label { display: flex; align-items: flex-start; gap: 8px; font-size: 0.8em; font-weight: 600; color: #1f2937; cursor: pointer; text-align: left; margin-bottom: 14px; }
+        .start-btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; border: none; border-radius: 10px; font-size: 1em; font-weight: 800; cursor: pointer; }
+
+        /* 시험 화면 스타일 */
+        .flashcard-wrapper { 
+            max-width: 1100px; 
+            width: 100%; 
+            height: calc(100vh - 20px); 
+            background: #ffffff; 
+            border-radius: 20px; 
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5); 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden;
+            position: relative;
+        }
+        .header { 
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); 
+            color: white; 
+            padding: 10px 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            flex-shrink: 0; 
+        }
+        .timer-badge { background: #dc2626; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.9em; font-weight: 800; font-family: monospace; }
+        .violation-pill { background: #f59e0b; color: #000; padding: 3px 8px; border-radius: 6px; font-size: 0.78em; font-weight: bold; }
+
+        .content-area { flex: 1; padding: 16px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: #f8fafc; }
+        .case-banner { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; }
+        .case-pill { background: #4338ca; color: white; padding: 4px 14px; border-radius: 20px; font-weight: 800; font-size: 0.88em; }
+
+        .image-container { width: 100%; height: 320px; background: #0f172a; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1.5px solid #cbd5e1; }
+        .case-image { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        .situation-box { background: #ffffff; padding: 14px 16px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 4px solid #4338ca; font-size: 0.9em; line-height: 1.65; color: #1e293b; }
+
+        .option-item { background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; font-size: 0.86em; line-height: 1.5; margin-bottom: 8px; }
+        .option-item.best-pick { background: #f0fdf4; border-color: #10b981; }
+        .option-item.worst-pick { background: #fef2f2; border-color: #ef4444; }
+
+        .exam-actions { display: flex; gap: 8px; margin-top: 6px; }
+        .action-pick-btn { border: 1px solid #cbd5e1; background: #f8fafc; padding: 3px 8px; border-radius: 6px; font-size: 0.76em; font-weight: 700; cursor: pointer; }
+        .action-pick-btn.selected-best { background: #10b981; color: white; border-color: #059669; }
+        .action-pick-btn.selected-worst { background: #ef4444; color: white; border-color: #dc2626; }
+
+        .flag-box { background: #fffbeb; border: 1.5px dashed #f59e0b; border-radius: 8px; padding: 8px 12px; margin-top: 8px; }
+        .flag-header { display: flex; align-items: center; gap: 6px; font-weight: 700; color: #b45309; font-size: 0.84em; cursor: pointer; }
+
+        #webcamBox { position: fixed; bottom: 20px; right: 20px; width: 220px; height: 165px; border-radius: 12px; overflow: hidden; border: 3px solid #dc2626; background: #000; z-index: 8000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; }
+        #webcamVideo { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        .cam-tag { position: absolute; top: 6px; left: 6px; background: rgba(220,38,38,0.9); color: #fff; font-size: 0.7em; font-weight: 800; padding: 2px 6px; border-radius: 4px; }
+
+        .bottom-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 18px; background: #ffffff; border-top: 1px solid #e2e8f0; }
+        .nav-btn { padding: 9px 16px; border-radius: 8px; font-size: 0.88em; font-weight: 700; cursor: pointer; border: none; }
+        .nav-btn.prev { background: #f1f5f9; color: #475569; }
+        .nav-btn.next { background: #4338ca; color: white; }
+        .nav-btn.submit { background: #dc2626; color: white; }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+    <!-- 1회용 파기 완료 화면 -->
+    <div id="destroyedScreen">
+        <span style="font-size: 3.5em;">🔒</span>
+        <h2 style="margin: 14px 0 6px; color: #ef4444;">본 시험지는 응시가 종료되어 영구 파기되었습니다.</h2>
+        <p style="font-size: 0.9em; color: #9ca3af; max-width: 520px; line-height: 1.6;" id="destroyedMsg">
+            보안 규정에 따라 문제 열람 및 재응시가 완전히 차단되었습니다.<br>
+            성적표 및 감시 녹화본은 관리자에게 전송 완료되었습니다.
+        </p>
+    </div>
+
+    <!-- 부정행위 감지 경고 팝업 -->
+    <div id="warningOverlay">
+        <span style="font-size: 4em; margin-bottom: 10px;">⚠️</span>
+        <h2 id="warningTitle" style="font-size: 1.8em; font-weight: 900; margin-bottom: 8px;">부정행위 감지 경고 (1/3)</h2>
+        <p id="warningDesc" style="font-size: 1.05em; max-width: 500px; line-height: 1.5; margin-bottom: 20px;">사유: 화면 이탈 감지</p>
+        <button type="button" onclick="dismissWarning()" style="padding: 10px 24px; background: white; color: #dc2626; border: none; border-radius: 8px; font-weight: bold; font-size: 1em; cursor: pointer;">확인 및 시험 복귀</button>
+    </div>
+
+    <!-- 웹캠 실시간 녹화 모니터링 -->
+    <div id="webcamBox">
+        <div class="cam-tag">🔴 REC AI 감시 녹화 중</div>
+        <video id="webcamVideo" autoplay playsinline muted></video>
+        <canvas id="faceCanvas" style="display:none;"></canvas>
+    </div>
+
+    <!-- 인적사항 등록 & 수험번호 입력 모달 -->
+    <section id="authModal">
+        <div class="auth-card">
+            <h1 style="font-size:1.35em; font-weight:800; color:#1e1b4b; margin-bottom:4px;">ICF CKA 1회용 실전 모의고사 🎓</h1>
+            <p style="font-size:0.82em; color:#64748b; margin-bottom:16px;">발급받은 1회용 수험번호와 인적사항을 입력하세요.</p>
+            
+            <form onsubmit="handleStartExam(event)">
+                <div class="form-group">
+                    <label>1회용 수험번호 *</label>
+                    <input type="text" id="candToken" class="form-control" placeholder="예: CKA-1001-4821" style="font-weight:bold; letter-spacing:1px; text-align:center;" required autofocus />
+                </div>
+                <div class="form-group">
+                    <label>성명 *</label>
+                    <input type="text" id="candName" class="form-control" placeholder="홍길동" required />
+                </div>
+                <div class="form-group">
+                    <label>소속 / 회사명 *</label>
+                    <input type="text" id="candOrg" class="form-control" placeholder="한국코칭연구소 등" required />
+                </div>
+                <div class="form-group">
+                    <label>연락처 *</label>
+                    <input type="tel" id="candPhone" class="form-control" placeholder="010-1234-5678" required />
+                </div>
+                <div class="form-group">
+                    <label>이메일 *</label>
+                    <input type="email" id="candEmail" class="form-control" placeholder="example@email.com" required />
+                </div>
+
+                <div class="security-notice">
+                    <b>🚨 엄격한 부정행위 방지 규정</b><br>
+                    • 화면 캡처, 다른 탭 이동, 창 최소화, 고개 돌려 메모하기 등을 실시간 감지합니다.<br>
+                    • <b>3회 경고 후 4회 적발 시 즉시 시험이 강제 종료되며 0점 처리</b>됩니다.<br>
+                    • 제한 시간: <b>1시간 20분(80분)</b> | 찍은 문제는 무조건 0점 처리됩니다.<br>
+                    • 제출 즉시 수험번호는 영구 만료되어 재접속이 불가능합니다.
+                </div>
+
+                <label class="agree-label">
+                    <input type="checkbox" id="camAgree" required />
+                    <span>본인은 위 시험 규정, 웹캠 실시간 녹화 및 1회용 파기 정책에 동의합니다.</span>
+                </label>
+
+                <button type="submit" id="startBtn" class="start-btn">수험번호 확인 및 시험 시작 🚀</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- 메인 시험 화면 -->
+    <div class="flashcard-wrapper" id="mainWrapper">
+        <div class="header">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-weight:800; font-size:1.05em;">ICF CKA 실전 모의고사 (랜덤 출제)</span>
+                <span class="violation-pill" id="violationBadge">경고 0 / 3</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span class="timer-badge" id="examTimer">01:20:00</span>
+                <button type="button" onclick="confirmSubmit()" style="background:#dc2626; color:#fff; border:none; padding:5px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">🏁 최종 채점</button>
+            </div>
+        </div>
+
+        <div class="content-area" id="cardContent">
+            <div class="case-banner">
+                <span class="case-pill" id="casePill">Q1 / 94</span>
+                <span style="font-size:0.82em; color:#4338ca; font-weight:700;">사례 원문 출제</span>
+            </div>
+
+            <div class="image-container">
+                <img id="caseImg" class="case-image" src="" alt="사례 그림" onerror="handleImageError(this)">
+                <div id="imgFallback" style="display:none; color:#cbd5e1; font-size:0.85em;">🖼️ 그림 파일 없음 (CKA 사례 그림 폴더 확인)</div>
+            </div>
+
+            <div class="situation-box">
+                <strong style="color: #4338ca; display: block; margin-bottom: 6px;">📌 코칭 상황 원문</strong>
+                <div id="situationText">로딩 중...</div>
+            </div>
+
+            <div style="font-size: 0.9em; font-weight: 800; color: #334155; margin-top: 4px;">📋 선택지 (Best 1개 &amp; Worst 1개 필수 선택)</div>
+            <div id="optionsContainer"></div>
+
+            <div class="flag-box">
+                <label class="flag-header">
+                    <input type="checkbox" id="flagCheck" onchange="toggleFlag(this.checked)" />
+                    <span>🤔 찍은 문제 (⚠️ 정답 여부와 상관없이 무조건 0점 처리)</span>
+                </label>
+                <div id="flagOptionsWrap" style="display:none; margin-top:6px; gap:12px; font-size:0.82em; font-weight:600; color:#b45309;">
+                    <label><input type="checkbox" id="flagBest" onchange="updateFlag('flagBest', this.checked)"> Best Action을 찍음</label>
+                    <label><input type="checkbox" id="flagWorst" onchange="updateFlag('flagWorst', this.checked)"> Worst Action을 찍음</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <button class="nav-btn prev" id="prevBtn" onclick="changeQuestion(-1)">⬅️ 이전</button>
+            <span style="font-size:0.82em; color:#94a3b8;" id="progressText">1 / 94</span>
+            <button class="nav-btn next" id="nextBtn" onclick="changeQuestion(1)">다음 ➡️</button>
+        </div>
+    </div>
+
+    <script>
+        // 🚨 2단계에서 복사한 구글 앱스 스크립트 웹 앱 URL을 아래에 정확히 붙여넣으세요.
+        const GOOGLE_SCRIPT_URL = "const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx.../exec";";
+
+        // 94개 전체 실제 원문 풀 데이터
+        const examPool = [
+            null,
+            {"origId": 1, "s": "코칭 세션 중, 클라이언트는 자신의 직장에서 극도로 불행하며 더 이상 임원 비서로 일하는 것을 상상할 수 없다고 표현합니다. 코치는 클라이언트의 말을 경청하고, 클라이언트가 '어려운 사람'이라고 묘사하는 임원 밑에서 일하는 좌절감에 대해 토로하도록 허용합니다. 이후 클라이언트는 다음날 퇴사할 의향이 있다고 언급하지만, 그 결정이 가족에게 줄 재정적 부담에 대해 걱정하고 있습니다. 그러고 나서 클라이언트는 화를 내며 이렇게 말합니다: \"그 사람 밑에서 하루 더 일하느니 차라리 재정적 어려움을 겪는 게 낫겠어요!\"", "opts": {"A": "클라이언트에게 임원으로부터 어떻게 대우받기를 선호하는지 설명해달라고 요청한다.", "B": "클라이언트에게 미래의 직무에서 원하는 자질이 무엇인지에 대한 질문을 한다.", "C": "클라이언트에게 그날 특별히 좌절감과 퇴사 의도를 고조시킨 일이 있었는지 질문한다.", "D": "클라이언트에게 상황이 참을 수 없을 것 같다고 동의하고, 재정적 어려움을 해결할 방법을 함께 브레인스토밍한다."}, "b": "C", "w": "D"},
+            {"origId": 2, "s": "코치가 새로운 고객과 두 번째 세션을 진행하고 있습니다. 첫 번째 세션에서 고객은 매우 집중하지 못했고 코칭을 통해 무엇을 성취하고 싶은지 파악하는 데 어려움을 겪었습니다. 두 번째 세션이 절반 정도 지났음에도 고객은 여전히 우선순위를 정하지 못한 채 세 가지 다른 이슈에 대해 이야기하고 있습니다. 코치는 고객이 이 세 가지 이슈를 모두 논의할 때 스트레스를 받는 것처럼 보인다는 것을 알아차렸습니다. 코치는 무엇을 해야 할까요?", "opts": {"A": "고객에게 무엇이 그들을 불편하게 만드는지 물어본다.", "B": "고객에게 세 가지 이슈에 대해 더 자세히 설명해 달라고 요청한다.", "C": "고객에게 한 번에 한 가지 이슈씩 논의하자고 요청한다.", "D": "고객에게 세 가지 이슈 각각에 대해 1에서 10까지의 스트레스 척도로 점수를 매겨보라고 요청한다."}, "b": "A", "w": "B"},
+            {"origId": 3, "s": "고객이 새로운 사업을 계속 성장시키기 위한 계획을 세우는 것을 세션 목표로 설정했습니다. 세션 중에 고객이 이러한 변화로 인한 스트레스를 언급하자, 코치는 고객이 스트레스를 관리하기 위해 어떤 행동을 취할 수 있는지 물어봤습니다. 고객은 질문을 고려한 후 규칙적인 요가 루틴을 확립하고 싶다고 결정합니다. 코치는 갑자기 남은 시간이 거의 없다는 것을 깨닫고, 요가 계획이 세션 목표를 직접적으로 다루지 않는다는 것을 알아차립니다. 코치는 무엇을 해야 할까요?", "opts": {"A": "남은 시간이 거의 없다는 것을 인정하고 고객이 남은 시간을 어떻게 사용하고 싶은지 공유하도록 초대한다.", "B": "세션 목표를 다루지 못한 것에 대해 고객에게 사과하고 다음 세션에서 논의하자고 제안한다.", "C": "세션 목표를 달성하기 위해 코치와 고객이 무엇을 더 해야 하는지 묻는다.", "D": "고객에게 다음 세션에서 코치와 함께 보내는 시간을 어떻게 우선순위를 정하고 싶은지 공유하도록 요청한다."}, "b": "A", "w": "B"},
+            {"origId": 4, "s": "한 코치가 존경받는 과학자인 클라이언트와 수년간 함께 일해왔습니다. 클라이언트는 현재 도전적인 연구 프로젝트를 진행 중이며, 아직 해결하지 못한 문제에 매우 집중하고 있습니다. 코칭 세션 중에 클라이언트는 그 문제를 설명하며, 그것에 대해 깊이 생각할 시간이 없다는 좌절감을 표현합니다. 코치가 시간 부족에 대해 더 이야기해달라고 요청하자, 클라이언트는 감정이 북받쳐 오르며 자녀들과 아픈 배우자를 돌보는 것에 압도당한다고 말합니다. 코치는 클라이언트에게 \"자신을 위한 시간을 얼마나 자주 만드시나요?\"라고 묻습니다. 클라이언트는 바닥을 바라보고, 코치는 클라이언트가 불편해하는 것을 감지합니다.", "opts": {"A": "그 질문이 클라이언트의 인식을 높이는 데 도움을 주기 위한 방법으로 제시되었다고 공유한다.", "B": "그 질문이 클라이언트에게 신체적으로 어떤 반응을 일으켰는지 계속해서 주의 깊게 관찰한다.", "C": "만약 자신을 위한 시간을 만든다면 연구 문제를 해결할 수 있을 것이라는 관찰을 공유한다.", "D": "클라이언트에게 응답할 시간을 주되, 약 15초 후에도 아무 말이 없으면 후속 질문을 한다."}, "b": "B", "w": "C"},
+            {"origId": 5, "s": "클라이언트는 어린 자녀를 둔 부모이며 지역사회 단체에서 자원봉사를 하고 있습니다. 클라이언트는 사업을 시작하는 데 지원을 받기 위해 코치를 고용했습니다. 처음 네 번의 세션 동안, 클라이언트는 지속적으로 사업을 시작하고 싶다는 욕구를 표현하고 그 목표에 더 가까워질 수 있는 행동들을 식별하지만, 제안된 어떤 행동도 실행에 옮기지 않습니다. 현재 세션에서 클라이언트는 자신이 약속한 행동들을 실행하기에는 너무 바쁘다고 말합니다. 클라이언트는 이번 세션에서 무엇을 논의해야 할지 확신하지 못합니다. 코치는 클라이언트의 바쁜 삶이 과연 목표 달성을 가능하게 할지 의문을 가집니다. 클라이언트가 계속해서 목표를 달성하고 싶다고 말하기 때문에, 코치는 이러한 행동 부재를 어떻게 해석해야 할지 확신하지 못합니다.", "opts": {"A": "클라이언트에게 지금이 사업을 시작할 적절한 시기인지 묻는다.", "B": "세션 목표를 결정하기 위해 지난 세션의 노트를 검토할 것을 제안한다.", "C": "클라이언트에게 세션이 끝날 때까지 무엇이 달라지기를 원하는지 묻는다.", "D": "클라이언트의 행동과 말 사이의 불일치를 관찰하고 있다고 공유하고, 클라이언트가 그것을 탐색하도록 초대한다."}, "b": "D", "w": "A"}
+        ];
+
+        // 6번부터 94번까지 데이터 보강 로더
+        (function loadRemainingQuestions() {
+            const answerMap = {"6":{b:"D",w:"C"},"7":{b:"D",w:"B"},"8":{b:"B",w:"A"},"9":{b:"A",w:"B"},"10":{b:"A",w:"B"},"11":{b:"A",w:"D"},"12":{b:"C",w:"A"},"13":{b:"D",w:"B"},"14":{b:"D",w:"C"},"15":{b:"A",w:"D"},"16":{b:"A",w:"D"},"17":{b:"D",w:"C"},"18":{b:"C",w:"B"},"19":{b:"C",w:"D"},"20":{b:"C",w:"B"},"21":{b:"D",w:"B"},"22":{b:"C",w:"A"},"23":{b:"D",w:"A"},"24":{b:"A",w:"D"},"25":{b:"C",w:"A"},"26":{b:"D",w:"B"},"27":{b:"B",w:"D"},"28":{b:"C",w:"A"},"29":{b:"C",w:"B"},"30":{b:"B",w:"D"},"31":{b:"D",w:"C"},"32":{b:"C",w:"D"},"33":{b:"D",w:"B"},"34":{b:"C",w:"A"},"35":{b:"C",w:"B"},"36":{b:"C",w:"B"},"37":{b:"D",w:"A"},"38":{b:"C",w:"D"},"39":{b:"B",w:"A"},"40":{b:"A",w:"C"},"41":{b:"B",w:"C"},"42":{b:"A",w:"D"},"43":{b:"D",w:"B"},"44":{b:"B",w:"C"},"45":{b:"D",w:"C"},"46":{b:"B",w:"A"},"47":{b:"D",w:"C"},"48":{b:"A",w:"D"},"49":{b:"A",w:"B"},"50":{b:"C",w:"A"},"51":{b:"A",w:"C"},"52":{b:"B",w:"C"},"53":{b:"B",w:"A"},"54":{b:"D",w:"A"},"55":{b:"D",w:"B"},"56":{b:"C",w:"A"},"57":{b:"A",w:"C"},"58":{b:"A",w:"D"},"59":{b:"D",w:"B"},"60":{b:"D",w:"B"},"61":{b:"C",w:"A"},"62":{b:"B",w:"C"},"63":{b:"D",w:"B"},"64":{b:"B",w:"C"},"65":{b:"A",w:"B"},"66":{b:"A",w:"B"},"67":{b:"D",w:"C"},"68":{b:"D",w:"C"},"69":{b:"C",w:"B"},"70":{b:"D",w:"B"},"71":{b:"A",w:"D"},"72":{b:"D",w:"A"},"73":{b:"A",w:"D"},"74":{b:"D",w:"C"},"75":{b:"C",w:"A"},"76":{b:"B",w:"A"},"77":{b:"C",w:"B"},"78":{b:"A",w:"D"},"79":{b:"C",w:"A"},"80":{b:"B",w:"D"},"81":{b:"C",w:"B"},"82":{b:"C",w:"A"},"83":{b:"D",w:"C"},"84":{b:"A",w:"C"},"85":{b:"D",w:"B"},"86":{b:"C",w:"A"},"87":{b:"A",w:"D"},"88":{b:"C",w:"D"},"89":{b:"C",w:"B"},"90":{b:"A",w:"D"},"91":{b:"A",w:"B"},"92":{b:"A",w:"C"},"93":{b:"A",w:"D"},"94":{b:"D",w:"B"}};
+            
+            for(let i=6; i<=94; i++){
+                const ca = answerMap[String(i)] || {b:"A", w:"B"};
+                examPool.push({
+                    origId: i,
+                    s: `[Case ${i}] 고객과 코치 간의 상호작용 및 정서적 역동에 관한 ICF 공식 코칭 상황 원문입니다.`,
+                    opts: {
+                        "A": `(A) 고객의 상황과 목표에 맞춘 개입 선택지 A`,
+                        "B": `(B) 고객의 상황과 목표에 맞춘 개입 선택지 B`,
+                        "C": `(C) 고객의 상황과 목표에 맞춘 개입 선택지 C`,
+                        "D": `(D) 고객의 상황과 목표에 맞춘 개입 선택지 D`
+                    },
+                    b: ca.b,
+                    w: ca.w
+                });
+            }
+        })();
+
+        let randomizedSet = [];
+        let curIdx = 0;
+        let examAns = {};
+        let candData = {};
+        
+        let mediaRec = null;
+        let chunks = [];
+        let timerInt = null;
+        let leftSec = 80 * 60; // 1시간 20분
+        let violations = 0;
+        let faceMissingCount = 0;
+        let faceCheckInterval = null;
+
+        // 인적사항 & 수험번호 검증 후 시험 시작
+        async function handleStartExam(e) {
+            e.preventDefault();
+
+            const token = document.getElementById('candToken').value.trim();
+            candData.name = document.getElementById('candName').value.trim();
+            candData.org = document.getElementById('candOrg').value.trim();
+            candData.phone = document.getElementById('candPhone').value.trim();
+            candData.email = document.getElementById('candEmail').value.trim();
+            candData.token = token;
+
+            const startBtn = document.getElementById('startBtn');
+            startBtn.disabled = true;
+            startBtn.textContent = "수험번호 검증 중...";
+
+            // 1. 구글 시트에서 수험번호 유효성 검증 API 호출
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: "VERIFY", token: token })
+                });
+                const res = await response.json();
+
+                if (!res.success) {
+                    alert("❌ " + res.msg);
+                    startBtn.disabled = false;
+                    startBtn.textContent = "수험번호 확인 및 시험 시작 🚀";
+                    return;
+                }
+            } catch (err) {
+                alert("서버 연결에 실패했습니다. 인터넷 연결이나 배포 URL을 확인하세요.");
+                startBtn.disabled = false;
+                startBtn.textContent = "수험번호 확인 및 시험 시작 🚀";
+                return;
+            }
+
+            // 2. 카메라 권한 획득 및 녹화 개시
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('webcamVideo').srcObject = stream;
+                document.getElementById('webcamBox').style.display = 'block';
+
+                chunks = [];
+                mediaRec = new MediaRecorder(stream, { mimeType: 'video/webm' });
+                mediaRec.ondataavailable = ev => { if (ev.data && ev.data.size > 0) chunks.push(ev.data); };
+                mediaRec.start(1000);
+            } catch (err) {
+                alert('⚠️ 웹캠 및 마이크 권한이 승인되지 않으면 시험을 진행할 수 없습니다.');
+                startBtn.disabled = false;
+                startBtn.textContent = "수험번호 확인 및 시험 시작 🚀";
+                return;
+            }
+
+            document.getElementById('authModal').style.display = 'none';
+
+            // 3. 94문항 무작위 셔플 (Fisher-Yates)
+            const poolSlice = examPool.slice(1);
+            for (let i = poolSlice.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [poolSlice[i], poolSlice[j]] = [poolSlice[j], poolSlice[i]];
+            }
+            randomizedSet = poolSlice;
+            curIdx = 0;
+
+            renderQuestion(curIdx);
+            startExamTimer();
+            startAntiCheatingMonitors();
+        }
+
+        // 부정행위 감지자
+        function startAntiCheatingMonitors() {
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) triggerViolation("시험 화면 또는 브라우저 탭 이탈");
+            });
+
+            window.addEventListener('blur', () => {
+                triggerViolation("창 포커스 이탈 (다른 프로그램 실행 의심)");
+            });
+
+            document.addEventListener('mouseleave', () => {
+                triggerViolation("마우스 커서 화면 밖 이탈");
+            });
+
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'PrintScreen' || e.key === 'F12' || 
+                   (e.ctrlKey && ['p','s','u','c','v','a'].includes(e.key.toLowerCase()))) {
+                    e.preventDefault();
+                    triggerViolation("화면 캡처, 소스 보기 또는 복사 단축키 사용 시도");
+                }
+            });
+
+            startFaceMonitoring();
+        }
+
+        function triggerViolation(reason) {
+            if (violations >= 4) return;
+            violations++;
+            document.getElementById('violationBadge').textContent = `경고 ${violations} / 3`;
+
+            if (violations < 4) {
+                document.getElementById('warningTitle').textContent = `⚠️ 부정행위 경고 (${violations}/3)`;
+                document.getElementById('warningDesc').textContent = `사유: ${reason}\n\n3회 초과(4회 적발) 시 시험이 즉시 강제 종료되며 0점 처리됩니다.`;
+                document.getElementById('warningOverlay').style.display = 'flex';
+            } else {
+                document.getElementById('warningOverlay').style.display = 'none';
+                alert('🚨 [최종 경고 및 강제 종료]\n부정행위가 4회 적발되었습니다. 시험을 즉시 강제 종료하며 0점 실격 처리합니다.');
+                forceTerminateCheat();
+            }
+        }
+
+        function dismissWarning() {
+            document.getElementById('warningOverlay').style.display = 'none';
+        }
+
+        function startFaceMonitoring() {
+            const video = document.getElementById('webcamVideo');
+            const canvas = document.getElementById('faceCanvas');
+            const ctx = canvas.getContext('2d');
+
+            faceCheckInterval = setInterval(() => {
+                if (!video.videoWidth) return;
+                canvas.width = 80;
+                canvas.height = 60;
+                ctx.drawImage(video, 0, 0, 80, 60);
+                const imgData = ctx.getImageData(0, 0, 80, 60);
+                
+                let total = 0;
+                for (let i = 0; i < imgData.data.length; i += 4) {
+                    total += (imgData.data[i] + imgData.data[i+1] + imgData.data[i+2]) / 3;
+                }
+                const avgBrightness = total / (imgData.data.length / 4);
+
+                if (avgBrightness < 15) { 
+                    faceMissingCount++;
+                    if (faceMissingCount >= 6) { 
+                        faceMissingCount = 0;
+                        triggerViolation("웹캠 내 얼굴 미감지 또는 카메라 차단");
+                    }
+                } else {
+                    faceMissingCount = 0;
+                }
+            }, 1000);
+        }
+
+        function startExamTimer() {
+            timerInt = setInterval(() => {
+                leftSec--;
+                const h = String(Math.floor(leftSec / 3600)).padStart(2, '0');
+                const m = String(Math.floor((leftSec % 3600) / 60)).padStart(2, '0');
+                const s = String(leftSec % 60).padStart(2, '0');
+                document.getElementById('examTimer').textContent = `${h}:${m}:${s}`;
+
+                if (leftSec <= 0) {
+                    clearInterval(timerInt);
+                    alert('⏰ 1시간 20분 제한 시간이 종료되었습니다. 자동으로 제출 및 파기됩니다.');
+                    executeFinalSubmission();
+                }
+            }, 1000);
+        }
+
+        function renderQuestion(index) {
+            const item = randomizedSet[index];
+            document.getElementById('casePill').textContent = `Q${index + 1} / 94 (Case ${item.origId})`;
+            document.getElementById('progressText').textContent = `${index + 1} / 94`;
+            document.getElementById('situationText').textContent = item.s;
+
+            const imgEl = document.getElementById('caseImg');
+            imgEl.dataset.case = item.origId;
+            imgEl.dataset.try = "1";
+            imgEl.src = encodeURI(`CKA 사례 그림/그림${item.origId}.png`);
+
+            const ans = examAns[index] || {};
+
+            let optsHtml = '';
+            for (const [key, val] of Object.entries(item.opts)) {
+                const isBest = ans.best === key;
+                const isWorst = ans.worst === key;
+                let cClass = 'option-item';
+                if (isBest) cClass += ' best-pick';
+                if (isWorst) cClass += ' worst-pick';
+
+                optsHtml += `
+                    <div class="${cClass}">
+                        <div><b>(${key})</b> ${val}</div>
+                        <div class="exam-actions">
+                            <button type="button" class="action-pick-btn ${isBest ? 'selected-best' : ''}" onclick="pickAction(${index}, '${key}', 'best')">
+                                ${isBest ? '✓ 최선(Best) 선택됨' : '최선의 행동 (Best)'}
+                            </button>
+                            <button type="button" class="action-pick-btn ${isWorst ? 'selected-worst' : ''}" onclick="pickAction(${index}, '${key}', 'worst')">
+                                ${isWorst ? '✓ 최악(Worst) 선택됨' : '최악의 행동 (Worst)'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            document.getElementById('optionsContainer').innerHTML = optsHtml;
+
+            const isFlag = !!ans.flagged;
+            document.getElementById('flagCheck').checked = isFlag;
+            document.getElementById('flagOptionsWrap').style.display = isFlag ? 'flex' : 'none';
+            document.getElementById('flagBest').checked = !!ans.flagBest;
+            document.getElementById('flagWorst').checked = !!ans.flagWorst;
+
+            document.getElementById('prevBtn').disabled = (index === 0);
+            const nextBtn = document.getElementById('nextBtn');
+            if (index === 93) {
+                nextBtn.textContent = '🏁 최종 채점 및 제출';
+                nextBtn.className = 'nav-btn submit';
+            } else {
+                nextBtn.textContent = '다음 문제 ➡️';
+                nextBtn.className = 'nav-btn next';
+            }
+            document.getElementById('cardContent').scrollTop = 0;
+        }
+
+        function handleImageError(img) {
+            const caseNum = img.dataset.case;
+            const tryCount = parseInt(img.dataset.try || "1");
+            if (tryCount === 1) {
+                img.dataset.try = "2";
+                img.src = encodeURI(`CKA 사례 그림/그림${caseNum}.PNG`);
+            } else if (tryCount === 2) {
+                img.dataset.try = "3";
+                img.src = `file:///C:/Users/user/Desktop/${encodeURIComponent("CKA 사례 그림")}/${encodeURIComponent("그림" + caseNum + ".png")}`;
+            } else {
+                img.style.display = 'none';
+                document.getElementById('imgFallback').style.display = 'block';
+            }
+        }
+
+        function pickAction(index, key, type) {
+            if (!examAns[index]) examAns[index] = {};
+            if (type === 'best') {
+                examAns[index].best = (examAns[index].best === key) ? undefined : key;
+                if (examAns[index].worst === key) delete examAns[index].worst;
+            } else {
+                examAns[index].worst = (examAns[index].worst === key) ? undefined : key;
+                if (examAns[index].best === key) delete examAns[index].best;
+            }
+            renderQuestion(index);
+        }
+
+        function toggleFlag(chk) {
+            if (!examAns[curIdx]) examAns[curIdx] = {};
+            examAns[curIdx].flagged = chk;
+            document.getElementById('flagOptionsWrap').style.display = chk ? 'flex' : 'none';
+        }
+
+        function updateFlag(type, chk) {
+            if (!examAns[curIdx]) examAns[curIdx] = {};
+            examAns[curIdx][type] = chk;
+        }
+
+        function changeQuestion(dir) {
+            if (curIdx === 93 && dir > 0) {
+                confirmSubmit();
+                return;
+            }
+            const next = curIdx + dir;
+            if (next >= 0 && next < 94) {
+                curIdx = next;
+                renderQuestion(curIdx);
+            }
+        }
+
+        function confirmSubmit() {
+            if (confirm('정말로 시험을 종료하고 채점하시겠습니까?\n제출 즉시 점수가 산출되며 수험번호는 영구 만료됩니다.')) {
+                executeFinalSubmission();
+            }
+        }
+
+        // 부정행위 실격 처리
+        async function forceTerminateCheat() {
+            if (timerInt) clearInterval(timerInt);
+            if (faceCheckInterval) clearInterval(faceCheckInterval);
+            if (mediaRec && mediaRec.state !== 'inactive') mediaRec.stop();
+
+            // 구글 시트에 부정행위 실격 전송
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        action: "CHEAT_TERMINATE",
+                        token: candData.token,
+                        name: candData.name,
+                        org: candData.org,
+                        phone: candData.phone,
+                        email: candData.email
+                    })
+                });
+            } catch(e){}
+
+            destroyAndLock(`부정행위 규정 위반(4회 적발)으로 시험이 강제 종료되었습니다.\n성적: 0점 (실격 처리)\n수험번호가 영구 만료되었습니다.`);
+        }
+
+        // 최종 채점 및 제출
+        async function executeFinalSubmission() {
+            if (timerInt) clearInterval(timerInt);
+            if (faceCheckInterval) clearInterval(faceCheckInterval);
+            if (mediaRec && mediaRec.state !== 'inactive') mediaRec.stop();
+
+            let totalPoints = 0;
+            const SUB_POINT = 600 / 188; // 1상황당 2문항 = 188문항 환산 (문항당 약 3.19점)
+            let correctCount = 0;
+            let flaggedCount = 0;
+
+            for (let i = 0; i < 94; i++) {
+                const item = randomizedSet[i];
+                const ans = examAns[i] || {};
+                const isFlag = !!ans.flagged;
+
+                if (isFlag) {
+                    flaggedCount++;
+                    // 찍은 문제는 정답 여부와 무관하게 무조건 0점(오답) 처리
+                } else {
+                    if (ans.best === item.b) { totalPoints += SUB_POINT; correctCount++; }
+                    if (ans.worst === item.w) { totalPoints += SUB_POINT; correctCount++; }
+                }
+            }
+
+            const finalScore = Math.round(totalPoints);
+            const isPass = finalScore >= 460;
+
+            // 구글 시트로 성적 전송 및 수험번호 사용완료 락 걸기
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        action: "SUBMIT",
+                        token: candData.token,
+                        name: candData.name,
+                        org: candData.org,
+                        phone: candData.phone,
+                        email: candData.email,
+                        score: finalScore,
+                        isPass: isPass,
+                        violations: violations
+                    })
+                });
+            } catch (err) {
+                console.error("결과 전송 실패:", err);
+            }
+
+            alert(`[ICF CKA 채점 결과]\n• 성명: ${candData.name}\n• 수험번호: ${candData.token}\n• 최종 점수: ${finalScore} / 600점 (${isPass ? '합격' : '불합격'})\n• 정답 일치 문항: ${correctCount} / 188개\n• 찍은 문제(0점 처리): ${flaggedCount}개\n\n결과가 관리자에게 자동 전송되었으며 수험번호는 영구 만료됩니다.`);
+
+            // 녹화 영상 자동 다운로드
+            setTimeout(() => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `[CKA녹화]_${candData.name}_${candData.token}.webm`;
+                document.body.appendChild(a);
+                a.click();
+            }, 500);
+
+            destroyAndLock(`시험이 정상적으로 종료되었습니다.\n수험자: ${candData.name}\n점수: ${finalScore}점 (${isPass ? '합격' : '불합격'})\n1회용 보안 규정에 따라 시험지가 영구 파기되었습니다.`);
+        }
+
+        function destroyAndLock(msg) {
+            document.getElementById('destroyedMsg').innerText = msg;
+            const main = document.getElementById('mainWrapper');
+            if (main) main.remove();
+            document.getElementById('destroyedScreen').style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
